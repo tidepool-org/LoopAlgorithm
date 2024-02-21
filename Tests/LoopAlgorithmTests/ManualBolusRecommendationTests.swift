@@ -125,7 +125,6 @@ final class ManualBolusRecommendationTests: XCTestCase {
     }
 
     func testPredictedGlucoseInRangeCodable() throws {
-        let startDate = dateFormatter.date(from: "2015-07-13T12:02:37")!
         let recommendation = ManualBolusRecommendation(amount: 0, notice: .predictedGlucoseInRange)
         let encoded = try encoder.encode(recommendation)
         XCTAssertEqual(

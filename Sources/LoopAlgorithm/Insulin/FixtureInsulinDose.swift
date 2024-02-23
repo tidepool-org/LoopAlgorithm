@@ -7,6 +7,7 @@
 import Foundation
 
 public struct FixtureInsulinDose: InsulinDose, Equatable {
+
     public var deliveryType: InsulinDeliveryType
 
     public var startDate: Date
@@ -16,6 +17,10 @@ public struct FixtureInsulinDose: InsulinDose, Equatable {
     public var volume: Double
 
     public var insulinType: InsulinType?
+
+    public var insulinModel: InsulinModel {
+        return LoopAlgorithm.insulinModelProvider.model(for: insulinType)
+    }
 
     public init(deliveryType: InsulinDeliveryType, startDate: Date, endDate: Date, volume: Double, insulinType: InsulinType? = nil) {
         self.deliveryType = deliveryType

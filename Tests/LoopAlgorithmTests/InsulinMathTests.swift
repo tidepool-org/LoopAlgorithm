@@ -83,10 +83,10 @@ class InsulinMathTests: XCTestCase {
         ]
 
         measure {
-            _ = input.glucoseEffects(insulinModelProvider: PresetInsulinModelProvider(), insulinSensitivityHistory: sensitivity)
+            _ = input.glucoseEffects(insulinSensitivityHistory: sensitivity)
         }
 
-        let effects = input.glucoseEffects(insulinModelProvider: PresetInsulinModelProvider(), insulinSensitivityHistory: sensitivity)
+        let effects = input.glucoseEffects(insulinSensitivityHistory: sensitivity)
 
         XCTAssertEqual(output.count, effects.count)
 
@@ -120,10 +120,10 @@ class InsulinMathTests: XCTestCase {
         ]
 
         measure {
-            _ = input.glucoseEffects(insulinModelProvider: PresetInsulinModelProvider(), insulinSensitivityHistory: sensitivity)
+            _ = input.glucoseEffects(insulinSensitivityHistory: sensitivity)
         }
 
-        let effects = input.glucoseEffects(insulinModelProvider: PresetInsulinModelProvider(), insulinSensitivityHistory: sensitivity)
+        let effects = input.glucoseEffects(insulinSensitivityHistory: sensitivity)
 
         XCTAssertEqual(output.count+1, effects.count)
 
@@ -160,10 +160,10 @@ class InsulinMathTests: XCTestCase {
         ]
 
         measure {
-            _ = input.glucoseEffects(insulinModelProvider: PresetInsulinModelProvider(), insulinSensitivityHistory: sensitivity)
+            _ = input.glucoseEffects(insulinSensitivityHistory: sensitivity)
         }
 
-        let effects = input.glucoseEffects(insulinModelProvider: PresetInsulinModelProvider(), insulinSensitivityHistory: sensitivity)
+        let effects = input.glucoseEffects(insulinSensitivityHistory: sensitivity)
 
         XCTAssertEqual(output.count, effects.count)
 
@@ -186,7 +186,7 @@ class InsulinMathTests: XCTestCase {
             )
         ]
 
-        let effects = input.glucoseEffects(insulinModelProvider: PresetInsulinModelProvider(), insulinSensitivityHistory: sensitivity)
+        let effects = input.glucoseEffects(insulinSensitivityHistory: sensitivity)
 
         XCTAssertEqual(0, effects.count)
     }
@@ -233,13 +233,11 @@ class InsulinMathTests: XCTestCase {
 
         measure {
             _ = basalRelativeDoses.glucoseEffects(
-                insulinModelProvider: PresetInsulinModelProvider(),
                 insulinSensitivityHistory: sensitivity
             )
         }
 
         let effects = basalRelativeDoses.glucoseEffects(
-            insulinModelProvider: PresetInsulinModelProvider(),
             insulinSensitivityHistory: sensitivity
         )
 

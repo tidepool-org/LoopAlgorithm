@@ -9,9 +9,9 @@ public protocol InsulinModelProvider {
 }
 
 public struct PresetInsulinModelProvider: InsulinModelProvider {
-    var defaultRapidActingModel: InsulinModel?
+    public var defaultRapidActingModel: InsulinModel
     
-    public init(defaultRapidActingModel: InsulinModel? = nil) {
+    public init(defaultRapidActingModel: InsulinModel) {
         self.defaultRapidActingModel = defaultRapidActingModel
     }
     
@@ -24,7 +24,7 @@ public struct PresetInsulinModelProvider: InsulinModelProvider {
         case .afrezza:
             return ExponentialInsulinModelPreset.afrezza
         default:
-            return defaultRapidActingModel ?? ExponentialInsulinModelPreset.rapidActingAdult
+            return defaultRapidActingModel
         }
     }
 }

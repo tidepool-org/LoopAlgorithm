@@ -18,18 +18,18 @@ public struct BasalRelativeDose: TimelineValue {
     public var startDate: Date
     public var endDate: Date
     public var volume: Double
-    public var insulinType: InsulinType?
+    public var insulinModel: InsulinModel
 
     public var duration: TimeInterval {
         return endDate.timeIntervalSince(startDate)
     }
 
-    public init(type: BasalRelativeDoseType, startDate: Date, endDate: Date, volume: Double, insulinType: InsulinType? = nil) {
+    public init(type: BasalRelativeDoseType, startDate: Date, endDate: Date, volume: Double, insulinModel: InsulinModel = LoopAlgorithm.insulinModelProvider.defaultRapidActingModel) {
         self.type = type
         self.startDate = startDate
         self.endDate = endDate
         self.volume = volume
-        self.insulinType = insulinType
+        self.insulinModel = insulinModel
     }
 }
 
@@ -58,7 +58,7 @@ extension BasalRelativeDose {
             startDate: dose.startDate,
             endDate: dose.endDate,
             volume: dose.volume,
-            insulinType: dose.insulinType
+            insulinModel: dose.insulinModel
         )
     }
 }

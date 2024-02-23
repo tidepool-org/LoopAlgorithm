@@ -81,7 +81,7 @@ public struct LoopAlgorithm {
     /// The amount of time since a given date that input data should be considered valid
     public static let inputDataRecencyInterval = TimeInterval(minutes: 15)
 
-    public static let insulinModelProvider = PresetInsulinModelProvider(defaultRapidActingModel: nil)
+    public static let insulinModelProvider = PresetInsulinModelProvider(defaultRapidActingModel: ExponentialInsulinModelPreset.rapidActingAdult)
 
     /// Generates a forecast predicting glucose.
     /// Outputs may be incomplete, if there are issues with the provided data, but as many intermediate derived fields as can be computed, will be computed.
@@ -136,7 +136,7 @@ public struct LoopAlgorithm {
             // Overlay basal history on basal doses, splitting doses to get amount delivered relative to basal
             dosesRelativeToBasal = doses.annotated(with: basal)
 
-            activeInsulin = dosesRelativeToBasal.insulinOnBoard(insulinModelProvider: insulinModelProvider, at: start)
+            activeInsulin = dosesRelativeToBasal.insulinOnBoard(at: start)
 
             var minDate = start
             var maxDate = start
@@ -146,7 +146,7 @@ public struct LoopAlgorithm {
                     minDate = dose.startDate
                 }
 
-                let doseEnd = dose.endDate.addingTimeInterval(insulinModelProvider.model(for: dose.insulinType).effectDuration)
+                let doseEnd = dose.endDate.addingTimeInterval(dose.insulinModel.effectDuration)
 
                 if doseEnd > maxDate {
                     maxDate = doseEnd
@@ -163,7 +163,6 @@ public struct LoopAlgorithm {
             }
 
             insulinEffects = dosesRelativeToBasal.glucoseEffects(
-                insulinModelProvider: insulinModelProvider,
                 insulinSensitivityHistory: sensitivity,
                 from: minDate,
                 to: maxDate)

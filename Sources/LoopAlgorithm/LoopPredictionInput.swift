@@ -1,5 +1,5 @@
 //
-//  LoopAlgorithmInput.swift
+//  AlgorithmInput.swift
 //  Learn
 //
 //  Created by Pete Schwamb on 7/29/23.

@@ -195,7 +195,6 @@ extension Collection where Element == BasalRelativeDose {
     /**
      Calculates the timeline of insulin remaining for a collection of doses
 
-     - parameter insulinModelProvider:  A factory that can provide an insulin model given an insulin type
      - parameter longestEffectDuration: The longest duration that a dose could be active.
      - parameter start:                 The date to start the timeline
      - parameter end:                   The date to end the timeline
@@ -231,7 +230,6 @@ extension Collection where Element == BasalRelativeDose {
     /**
      Calculates insulin remaining at a given point in time for a collection of doses
 
-     - parameter insulinModelProvider:  A factory that can provide an insulin model given an insulin type
      - parameter date:                  The date at which to calculate remaining insulin.  If nil, current date is used.
 
      - returns: Insulin amount remaining at specified time
@@ -251,7 +249,6 @@ extension Collection where Element == BasalRelativeDose {
     /// Calculates the timeline of glucose effects for a collection of doses. The ISF used for a given dose is based on the ISF in effect at the dose start time.
     ///
     /// - Parameters:
-    ///   - insulinModelProvider: A factory that can provide an insulin model given an insulin type
     ///   - insulinSensitivityHistory: The timeline of glucose effect per unit of insulin
     ///   - start: The earliest date of effects to return
     ///   - end: The latest date of effects to return. If nil is passed, it will be calculated from the last sample end date plus the longestEffectDuration.
@@ -299,7 +296,6 @@ extension Collection where Element == BasalRelativeDose {
     /// of that dose's absoption interval based on the timeline of insulin sensitivity.
     ///
     /// - Parameters:
-    ///   - insulinModelProvider: A factory that can provide an insulin model given an insulin type
     ///   - longestEffectDuration: The longest duration that a dose could be active.
     ///   - insulinSensitivityTimeline: A timeline of glucose effect per unit of insulin
     ///   - start: The earliest date of effects to return
@@ -354,7 +350,6 @@ extension Collection where Element == BasalRelativeDose {
     /// of that dose's absoption interval based on the timeline of insulin sensitivity.
     ///
     /// - Parameters:
-    ///   - insulinModelProvider: A factory that can provide an insulin model given an insulin type
     ///   - longestEffectDuration: The longest duration that a dose could be active.
     ///   - insulinSensitivityTimeline: A timeline of glucose effect per unit of insulin
     ///   - effectDates: The dates at which to calculate glucose effects

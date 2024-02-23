@@ -22,6 +22,7 @@ class CorrectionDosingTests: XCTestCase {
     var target: GlucoseRangeTimeline!
     var sensitivity: [AbsoluteScheduleValue<HKQuantity>]!
     let basalRate = 1.0
+    let insulinModel = ExponentialInsulinModelPreset.rapidActingAdult
 
     override func setUp() {
         let lowerBound: HKQuantity = .glucose(value: 90)
@@ -49,7 +50,7 @@ class CorrectionDosingTests: XCTestCase {
             target: target,
             suspendThreshold: suspendThreshold,
             sensitivity: sensitivity,
-            insulinType: .novolog
+            insulinModel: insulinModel
         )
 
         let recommendation = LoopAlgorithm.recommendTempBasal(
@@ -93,7 +94,7 @@ class CorrectionDosingTests: XCTestCase {
             target: target,
             suspendThreshold: suspendThreshold,
             sensitivity: sensitivity,
-            insulinType: .novolog
+            insulinModel: insulinModel
         )
 
         let recommendation = LoopAlgorithm.recommendTempBasal(
@@ -137,7 +138,7 @@ class CorrectionDosingTests: XCTestCase {
             target: target,
             suspendThreshold: suspendThreshold,
             sensitivity: sensitivity,
-            insulinType: .novolog
+            insulinModel: insulinModel
         )
 
         let recommendation = LoopAlgorithm.recommendTempBasal(
@@ -182,7 +183,7 @@ class CorrectionDosingTests: XCTestCase {
             target: target,
             suspendThreshold: suspendThreshold,
             sensitivity: sensitivity,
-            insulinType: .novolog
+            insulinModel: insulinModel
         )
 
         let recommendation = LoopAlgorithm.recommendTempBasal(
@@ -228,7 +229,7 @@ class CorrectionDosingTests: XCTestCase {
             target: target,
             suspendThreshold: suspendThreshold,
             sensitivity: sensitivity,
-            insulinType: .novolog
+            insulinModel: insulinModel
         )
 
         let recommendation = LoopAlgorithm.recommendTempBasal(
@@ -277,7 +278,7 @@ class CorrectionDosingTests: XCTestCase {
             target: target,
             suspendThreshold: suspendThreshold,
             sensitivity: sensitivity,
-            insulinType: .novolog
+            insulinModel: insulinModel
         )
 
         let recommendation = LoopAlgorithm.recommendTempBasal(
@@ -326,7 +327,7 @@ class CorrectionDosingTests: XCTestCase {
             target: target,
             suspendThreshold: suspendThreshold,
             sensitivity: sensitivity,
-            insulinType: .novolog
+            insulinModel: insulinModel
         )
 
         let recommendation = LoopAlgorithm.recommendTempBasal(
@@ -372,7 +373,7 @@ class CorrectionDosingTests: XCTestCase {
             target: target,
             suspendThreshold: suspendThreshold,
             sensitivity: sensitivity,
-            insulinType: .novolog
+            insulinModel: insulinModel
         )
 
         let recommendation = LoopAlgorithm.recommendTempBasal(
@@ -417,7 +418,7 @@ class CorrectionDosingTests: XCTestCase {
             target: target,
             suspendThreshold: suspendThreshold,
             sensitivity: sensitivity,
-            insulinType: .novolog
+            insulinModel: insulinModel
         )
 
         let recommendation = LoopAlgorithm.recommendTempBasal(
@@ -462,7 +463,7 @@ class CorrectionDosingTests: XCTestCase {
             target: target,
             suspendThreshold: suspendThreshold,
             sensitivity: sensitivity,
-            insulinType: .novolog
+            insulinModel: insulinModel
         )
 
         let recommendation = LoopAlgorithm.recommendTempBasal(
@@ -507,7 +508,7 @@ class CorrectionDosingTests: XCTestCase {
             target: target,
             suspendThreshold: suspendThreshold,
             sensitivity: sensitivity,
-            insulinType: .novolog
+            insulinModel: insulinModel
         )
 
         let recommendation = LoopAlgorithm.recommendTempBasal(

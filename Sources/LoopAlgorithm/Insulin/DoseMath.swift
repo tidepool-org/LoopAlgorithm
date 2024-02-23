@@ -297,43 +297,43 @@ extension Array where Element: GlucoseValue {
     }
 
 
-    /// Recommends a bolus to conform a glucose prediction timeline to a correction range
-    ///
-    /// - Parameters:
-    ///   - correctionRange: The timeline of correction ranges
-    ///   - date: The date at which the bolus would apply, defaults to now
-    ///   - suspendThreshold: A glucose value causing a recommendation of no insulin if any prediction falls below
-    ///   - insulinSensitivity: The timeline of insulin sensitivities
-    ///   - model: The insulin absorption model to be used for the recommended dose
-    ///   - maxBolus: The maximum bolus to return
-    /// - Returns: A bolus recommendation
-    public func recommendedManualBolus(
-        to correctionRangeTimeline: GlucoseRangeTimeline,
-        at date: Date = Date(),
-        suspendThreshold: HKQuantity,
-        insulinSensitivity: [AbsoluteScheduleValue<HKQuantity>],
-        model: InsulinModel,
-        maxBolus: Double
-    ) -> ManualBolusRecommendation {
-        let correction = self.insulinCorrection(
-            to: correctionRangeTimeline,
-            at: date,
-            suspendThreshold: suspendThreshold,
-            insulinSensitivity: insulinSensitivity,
-            model: model
-        )
-
-        var bolus = correction.asManualBolus(maxBolus: maxBolus)
-
-        // Handle the "current BG below target" notice here
-        // TODO: Don't assume in the future that the first item in the array is current BG
-        if case .predictedGlucoseBelowTarget? = bolus.notice,
-           let first = first, first.quantity < correctionRangeTimeline.closestPrior(to: first.startDate)!.value.lowerBound
-        {
-            bolus.notice = .currentGlucoseBelowTarget(glucose: SimpleGlucoseValue(first))
-        }
-
-        return bolus
-    }
+//    /// Recommends a bolus to conform a glucose prediction timeline to a correction range
+//    ///
+//    /// - Parameters:
+//    ///   - correctionRange: The timeline of correction ranges
+//    ///   - date: The date at which the bolus would apply, defaults to now
+//    ///   - suspendThreshold: A glucose value causing a recommendation of no insulin if any prediction falls below
+//    ///   - insulinSensitivity: The timeline of insulin sensitivities
+//    ///   - model: The insulin absorption model to be used for the recommended dose
+//    ///   - maxBolus: The maximum bolus to return
+//    /// - Returns: A bolus recommendation
+//    public func recommendedManualBolus(
+//        to correctionRangeTimeline: GlucoseRangeTimeline,
+//        at date: Date = Date(),
+//        suspendThreshold: HKQuantity,
+//        insulinSensitivity: [AbsoluteScheduleValue<HKQuantity>],
+//        model: InsulinModel,
+//        maxBolus: Double
+//    ) -> ManualBolusRecommendation {
+//        let correction = self.insulinCorrection(
+//            to: correctionRangeTimeline,
+//            at: date,
+//            suspendThreshold: suspendThreshold,
+//            insulinSensitivity: insulinSensitivity,
+//            model: model
+//        )
+//
+//        var bolus = correction.asManualBolus(maxBolus: maxBolus)
+//
+//        // Handle the "current BG below target" notice here
+//        // TODO: Don't assume in the future that the first item in the array is current BG
+//        if case .predictedGlucoseBelowTarget? = bolus.notice,
+//           let first = first, first.quantity < correctionRangeTimeline.closestPrior(to: first.startDate)!.value.lowerBound
+//        {
+//            bolus.notice = .currentGlucoseBelowTarget(glucose: SimpleGlucoseValue(first))
+//        }
+//
+//        return bolus
+//    }
 
 }

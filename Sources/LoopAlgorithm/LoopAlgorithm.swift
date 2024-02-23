@@ -81,8 +81,6 @@ public struct LoopAlgorithm {
     /// The amount of time since a given date that input data should be considered valid
     public static let inputDataRecencyInterval = TimeInterval(minutes: 15)
 
-    public static let insulinModelProvider = PresetInsulinModelProvider(defaultRapidActingModel: ExponentialInsulinModelPreset.rapidActingAdult)
-
     /// Generates a forecast predicting glucose.
     /// Outputs may be incomplete, if there are issues with the provided data, but as many intermediate derived fields as can be computed, will be computed.
     ///
@@ -300,10 +298,8 @@ public struct LoopAlgorithm {
         target: GlucoseRangeTimeline,
         suspendThreshold: HKQuantity,
         sensitivity: [AbsoluteScheduleValue<HKQuantity>],
-        insulinType: InsulinType
+        insulinModel: InsulinModel
     ) -> InsulinCorrection {
-        let insulinModel = insulinModelProvider.model(for: insulinType)
-
         return prediction.insulinCorrection(
             to: target,
             at: deliveryDate,
@@ -401,17 +397,17 @@ public struct LoopAlgorithm {
         return bolus
     }
 
-    public static func recommendDose<CarbType, GlucoseType, InsulinDoseType>(input: LoopAlgorithmInput<CarbType, GlucoseType, InsulinDoseType>) throws -> LoopAlgorithmDoseRecommendation {
-        let output = run(input: input)
-        switch output.recommendationResult {
-        case .success(let recommendation):
-            return recommendation
-        case .failure(let error):
-            throw error
-        }
-    }
+//    public static func recommendDose<CarbType>(input: any LoopAlgorithmInput) throws -> LoopAlgorithmDoseRecommendation {
+//        let output = run(input: input)
+//        switch output.recommendationResult {
+//        case .success(let recommendation):
+//            return recommendation
+//        case .failure(let error):
+//            throw error
+//        }
+//    }
 
-    public static func run<CarbType, GlucoseType, InsulinDoseType>(input: LoopAlgorithmInput<CarbType, GlucoseType, InsulinDoseType>) -> LoopAlgorithmOutput<CarbType> {
+    public static func run<LoopAlgorithmInputType: AlgorithmInput>(input: LoopAlgorithmInputType) -> AlgorithmOutput<LoopAlgorithmInputType.CarbType> {
 
         let prediction = generatePrediction(
             start: input.predictionStart,
@@ -477,7 +473,7 @@ public struct LoopAlgorithm {
                 target: input.target,
                 suspendThreshold: suspendThreshold,
                 sensitivity: sensitivityForDosing,
-                insulinType: input.recommendationInsulinType)
+                insulinModel: input.recommendationInsulinModel)
 
             switch input.recommendationType {
             case .manualBolus:
@@ -509,7 +505,7 @@ public struct LoopAlgorithm {
             result = .failure(error)
         }
 
-        return LoopAlgorithmOutput(
+        return AlgorithmOutput(
             recommendationResult: result,
             predictedGlucose: prediction.glucose,
             effects: prediction.effects,

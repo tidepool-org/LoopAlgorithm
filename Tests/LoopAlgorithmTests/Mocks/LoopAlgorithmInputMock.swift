@@ -1,6 +1,6 @@
 //
-//  LoopAlgorithmInput.swift
-//  
+//  AlgorithmInputFixture.swift
+//
 //
 //  Created by Pete Schwamb on 1/2/24.
 //
@@ -9,17 +9,15 @@ import Foundation
 import HealthKit
 @testable import LoopAlgorithm
 
-public typealias LoopAlgorithmInputFixture = LoopAlgorithmInput<FixtureCarbEntry, FixtureGlucoseSample, FixtureInsulinDose>
-
-extension LoopAlgorithmInputFixture {
+extension AlgorithmInputFixture {
     /// Mocks stable, in range glucose, no insulin, no carbs, with reasonable settings
-    static func mock(for now: Date = Date()) -> LoopAlgorithmInputFixture {
+    static func mock(for now: Date = Date()) -> AlgorithmInputFixture {
 
         func d(_ interval: TimeInterval) -> Date {
             return now.addingTimeInterval(interval)
         }
 
-        return LoopAlgorithmInputFixture(
+        return AlgorithmInputFixture(
             predictionStart: now,
             glucoseHistory: [
                 FixtureGlucoseSample(startDate: d(.minutes(-19)), quantity: .glucose(value: 100)),

@@ -24,7 +24,7 @@ public struct BasalRelativeDose: TimelineValue {
         return endDate.timeIntervalSince(startDate)
     }
 
-    public init(type: BasalRelativeDoseType, startDate: Date, endDate: Date, volume: Double, insulinModel: InsulinModel = LoopAlgorithm.insulinModelProvider.defaultRapidActingModel) {
+    public init(type: BasalRelativeDoseType, startDate: Date, endDate: Date, volume: Double, insulinModel: InsulinModel = ExponentialInsulinModelPreset.rapidActingAdult) {
         self.type = type
         self.startDate = startDate
         self.endDate = endDate

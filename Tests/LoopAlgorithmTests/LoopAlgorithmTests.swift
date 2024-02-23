@@ -11,11 +11,11 @@ import XCTest
 
 final class LoopAlgorithmTests: XCTestCase {
 
-    func loadScenario(_ name: String) -> (input: LoopAlgorithmInput<FixtureCarbEntry, FixtureGlucoseSample, FixtureInsulinDose>, recommendation: LoopAlgorithmDoseRecommendation) {
+    func loadScenario(_ name: String) -> (input: AlgorithmInputFixture, recommendation: LoopAlgorithmDoseRecommendation) {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         var url = Bundle.module.url(forResource: name + "_scenario", withExtension: "json", subdirectory: "Fixtures")!
-        let input = try! decoder.decode(LoopAlgorithmInput.self, from: try! Data(contentsOf: url))
+        let input = try! decoder.decode(AlgorithmInputFixture.self, from: try! Data(contentsOf: url))
 
         url = Bundle.module.url(forResource: name + "_recommendation", withExtension: "json", subdirectory: "Fixtures")!
         let recommendation = try! decoder.decode(LoopAlgorithmDoseRecommendation.self, from: try! Data(contentsOf: url))
@@ -55,8 +55,8 @@ final class LoopAlgorithmTests: XCTestCase {
 
     func testAlgorithmShouldBeDateIndependent() throws {
         let now = Date()
-        var a = LoopAlgorithmInputFixture.mock(for: now)
-        var b = LoopAlgorithmInputFixture.mock(for: now.addingTimeInterval(.minutes(-2.5)))
+        var a = AlgorithmInputFixture.mock(for: now)
+        var b = AlgorithmInputFixture.mock(for: now.addingTimeInterval(.minutes(-2.5)))
 
         a.carbEntries.append(
             FixtureCarbEntry(
@@ -100,7 +100,7 @@ final class LoopAlgorithmTests: XCTestCase {
 
     func testObservedProgressForCarbStatus() throws {
         let date = ISO8601DateFormatter().date(from: "2024-01-03T12:00:00+0000")!
-        var input = LoopAlgorithmInputFixture.mock(for: date)
+        var input = AlgorithmInputFixture.mock(for: date)
 
         let now = input.predictionStart
 
@@ -165,7 +165,7 @@ final class LoopAlgorithmTests: XCTestCase {
     func testAutoBolusMaxIOBClamping() async {
         let now = ISO8601DateFormatter().date(from: "2020-03-11T12:13:14-0700")!
 
-        var input = LoopAlgorithmInputFixture.mock(for: now)
+        var input = AlgorithmInputFixture.mock(for: now)
         input.recommendationType = .automaticBolus
 
         // 8U bolus on board, and 100g carbs; CR = 10, so that should be 10U to cover the carbs
@@ -199,7 +199,7 @@ final class LoopAlgorithmTests: XCTestCase {
     func testTempBasalMaxIOBClamping() {
         let now = ISO8601DateFormatter().date(from: "2020-03-11T12:13:14-0700")!
 
-        var input = LoopAlgorithmInput.mock(for: now)
+        var input = AlgorithmInputFixture.mock(for: now)
         input.recommendationType = .tempBasal
 
         // 8U bolus on board, and 100g carbs; CR = 10, so that should be 10U to cover the carbs

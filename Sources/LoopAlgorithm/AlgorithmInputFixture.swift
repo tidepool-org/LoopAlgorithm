@@ -1,26 +1,18 @@
 //
-//  LoopAlgorithmInput.swift
-//  LoopAlgorithm
+//  File.swift
+//  
 //
-//  Created by Pete Schwamb on 9/21/23.
-//  Copyright © 2023 LoopKit Authors. All rights reserved.
+//  Created by Pete Schwamb on 2/23/24.
 //
 
 import Foundation
 import HealthKit
 
-public enum AlgorithmInputDecodingError: Error {
-    case invalidDoseRecommendationType
-    case invalidInsulinType
-    case doseRateMissing
-    case doseVolumeMissing
-}
-
-public struct LoopAlgorithmInput<CarbType: CarbEntry, GlucoseType: GlucoseSampleValue, InsulinDoseType: InsulinDose> {
+public struct AlgorithmInputFixture: AlgorithmInput {
     public var predictionStart: Date
-    public var glucoseHistory: [GlucoseType]
-    public var doses: [InsulinDoseType]
-    public var carbEntries: [CarbType]
+    public var glucoseHistory: [FixtureGlucoseSample]
+    public var doses: [FixtureInsulinDose]
+    public var carbEntries: [FixtureCarbEntry]
     public var basal: [AbsoluteScheduleValue<Double>]
     public var sensitivity: [AbsoluteScheduleValue<HKQuantity>]
     public var carbRatio: [AbsoluteScheduleValue<Double>]
@@ -31,9 +23,13 @@ public struct LoopAlgorithmInput<CarbType: CarbEntry, GlucoseType: GlucoseSample
     public var useIntegralRetrospectiveCorrection: Bool
     public var includePositiveVelocityAndRC: Bool
     public var carbAbsorptionModel: CarbAbsorptionModel = .piecewiseLinear
-    public var recommendationInsulinType: InsulinType = .novolog
+    public var recommendationInsulinType: FixtureInsulinType = .novolog
     public var recommendationType: DoseRecommendationType = .automaticBolus
     public var automaticBolusApplicationFactor: Double?
+
+    public var recommendationInsulinModel: InsulinModel {
+        recommendationInsulinType.insulinModel
+    }
 
     struct TargetEntry: Codable {
         var startDate: Date
@@ -50,9 +46,9 @@ public struct LoopAlgorithmInput<CarbType: CarbEntry, GlucoseType: GlucoseSample
 
     public init(
         predictionStart: Date,
-        glucoseHistory: [GlucoseType],
-        doses: [InsulinDoseType],
-        carbEntries: [CarbType],
+        glucoseHistory: [FixtureGlucoseSample],
+        doses: [FixtureInsulinDose],
+        carbEntries: [FixtureCarbEntry],
         basal: [AbsoluteScheduleValue<Double>],
         sensitivity: [AbsoluteScheduleValue<HKQuantity>],
         carbRatio: [AbsoluteScheduleValue<Double>],
@@ -63,7 +59,7 @@ public struct LoopAlgorithmInput<CarbType: CarbEntry, GlucoseType: GlucoseSample
         useIntegralRetrospectiveCorrection: Bool = false,
         includePositiveVelocityAndRC: Bool = true,
         carbAbsorptionModel: CarbAbsorptionModel = .piecewiseLinear,
-        recommendationInsulinType: InsulinType,
+        recommendationInsulinType: FixtureInsulinType,
         recommendationType: DoseRecommendationType,
         automaticBolusApplicationFactor: Double? = nil
     ) {
@@ -87,47 +83,13 @@ public struct LoopAlgorithmInput<CarbType: CarbEntry, GlucoseType: GlucoseSample
     }
 }
 
-extension LoopAlgorithmInput.Glucose: Codable {
-    public init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        self.value = try container.decode(Double.self, forKey: .value)
-        self.isCalibration = try container.decodeIfPresent(Bool.self, forKey: .isCalibration) ?? false
-        self.date = try container.decode(Date.self, forKey: .date)
-    }
 
-    public func encode(to encoder: Encoder) throws {
-        var container = encoder.container(keyedBy: CodingKeys.self)
-
-        try container.encode(value, forKey: .value)
-        if isCalibration {
-            try container.encode(isCalibration, forKey: .isCalibration)
-        }
-        try container.encode(date, forKey: .date)
-
-    }
-
-    private enum CodingKeys: String, CodingKey {
-        case value
-        case isCalibration
-        case date
-    }
-}
-
-
-extension LoopAlgorithmInput: Codable where CarbType == FixtureCarbEntry, GlucoseType == FixtureGlucoseSample, InsulinDoseType == FixtureInsulinDose {
+extension AlgorithmInputFixture: Codable {
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
 
         self.predictionStart = try container.decode(Date.self, forKey: .predictionStart)
-        let glucose = try container.decode([Glucose].self, forKey: .glucoseHistory)
-        self.glucoseHistory = glucose.map { sample in
-            FixtureGlucoseSample(
-                startDate: sample.date,
-                quantity: HKQuantity(unit: .milligramsPerDeciliter, doubleValue: sample.value),
-                isDisplayOnly: sample.isCalibration
-            )
-        }
-
+        self.glucoseHistory = try container.decode([FixtureGlucoseSample].self, forKey: .glucoseHistory)
         self.doses = try container.decode([FixtureInsulinDose].self, forKey: .doses)
         self.carbEntries = try container.decode([FixtureCarbEntry].self, forKey: .carbEntries)
         self.basal = try container.decode([AbsoluteScheduleValue<Double>].self, forKey: .basal)
@@ -150,8 +112,8 @@ extension LoopAlgorithmInput: Codable where CarbType == FixtureCarbEntry, Glucos
         self.includePositiveVelocityAndRC = try container.decodeIfPresent(Bool.self, forKey: .includePositiveVelocityAndRC) ?? true
 
         if let rawRecommendationInsulinType = try container.decodeIfPresent(String.self, forKey: .recommendationInsulinType) {
-            guard let decodedRecommendationInsulinType = InsulinType(with: rawRecommendationInsulinType) else {
-                throw AlgorithmInputDecodingError.invalidDoseRecommendationType
+            guard let decodedRecommendationInsulinType = FixtureInsulinType(rawValue: rawRecommendationInsulinType) else {
+                throw AlgorithmInputDecodingError.invalidInsulinType
             }
             self.recommendationInsulinType = decodedRecommendationInsulinType
         } else {
@@ -173,13 +135,7 @@ extension LoopAlgorithmInput: Codable where CarbType == FixtureCarbEntry, Glucos
 
         try container.encode(predictionStart, forKey: .predictionStart)
         try container.encode(glucoseHistory, forKey: .glucoseHistory)
-        let glucose = glucoseHistory.map { sample in
-            return Glucose(
-                value: sample.quantity.doubleValue(for: .milligramsPerDeciliter),
-                isCalibration: sample.isDisplayOnly,
-                date: sample.startDate)
-        }
-        try container.encode(glucose, forKey: .glucoseHistory)
+        try container.encode(glucoseHistory, forKey: .glucoseHistory)
         try container.encode(doses, forKey: .doses)
         try container.encode(carbEntries, forKey: .carbEntries)
         try container.encode(basal, forKey: .basal)
@@ -201,7 +157,7 @@ extension LoopAlgorithmInput: Codable where CarbType == FixtureCarbEntry, Glucos
         if !includePositiveVelocityAndRC {
             try container.encode(includePositiveVelocityAndRC, forKey: .includePositiveVelocityAndRC)
         }
-        try container.encode(recommendationInsulinType.stringValue, forKey: .recommendationInsulinType)
+        try container.encode(recommendationInsulinType.rawValue, forKey: .recommendationInsulinType)
         try container.encode(recommendationType.rawValue, forKey: .recommendationType)
 
     }
@@ -222,45 +178,5 @@ extension LoopAlgorithmInput: Codable where CarbType == FixtureCarbEntry, Glucos
         case includePositiveVelocityAndRC
         case recommendationInsulinType
         case recommendationType
-    }
-}
-
-
-// Default Codable implementation for insulin type is int, which is not very readable.  Add more readable identifier
-extension InsulinType {
-    var stringValue: String {
-        switch self {
-        case .afrezza:
-            return "afrezza"
-        case .novolog:
-            return "novolog"
-        case .humalog:
-            return "humalog"
-        case .apidra:
-            return "apidra"
-        case .fiasp:
-            return "fiasp"
-        case .lyumjev:
-            return "lyumjev"
-        }
-    }
-
-    init?(with algorithmInputIdentifier: String) {
-        switch algorithmInputIdentifier {
-        case "afrezza":
-            self = .afrezza
-        case "novolog":
-            self = .novolog
-        case "humalog":
-            self = .humalog
-        case "apidra":
-            self = .apidra
-        case "fiasp":
-            self = .fiasp
-        case "lyumjev":
-            self = .lyumjev
-        default:
-            return nil
-        }
     }
 }

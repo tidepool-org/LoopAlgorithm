@@ -42,8 +42,8 @@ extension FixtureGlucoseSample: Codable {
         let wasUserEntered = try container.decodeIfPresent(Bool.self, forKey: .wasUserEntered) ?? false
 
         self.init(provenanceIdentifier: provenanceIdentifier,
-                  startDate: try container.decode(Date.self, forKey: .startDate),
-                  quantity: HKQuantity(unit: .milligramsPerDeciliter, doubleValue: try container.decode(Double.self, forKey: .quantity)),
+                  startDate: try container.decode(Date.self, forKey: .date),
+                  quantity: HKQuantity(unit: .milligramsPerDeciliter, doubleValue: try container.decode(Double.self, forKey: .value)),
                   isDisplayOnly: isDisplayOnly,
                   wasUserEntered: wasUserEntered
         )
@@ -54,8 +54,8 @@ extension FixtureGlucoseSample: Codable {
         if provenanceIdentifier != Self.defaultProvenanceIdentifier {
             try container.encode(provenanceIdentifier, forKey: .provenanceIdentifier)
         }
-        try container.encode(startDate, forKey: .startDate)
-        try container.encode(quantity.doubleValue(for: .milligramsPerDeciliter), forKey: .quantity)
+        try container.encode(startDate, forKey: .date)
+        try container.encode(quantity.doubleValue(for: .milligramsPerDeciliter), forKey: .value)
         if isDisplayOnly {
             try container.encode(isDisplayOnly, forKey: .isDisplayOnly)
         }
@@ -66,8 +66,8 @@ extension FixtureGlucoseSample: Codable {
 
     private enum CodingKeys: String, CodingKey {
         case provenanceIdentifier
-        case startDate
-        case quantity
+        case date
+        case value
         case isDisplayOnly
         case wasUserEntered
     }

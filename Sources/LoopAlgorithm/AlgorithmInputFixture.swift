@@ -8,6 +8,13 @@
 import Foundation
 import HealthKit
 
+public enum AlgorithmInputFixtureDecodingError: Error {
+    case invalidDoseRecommendationType
+    case invalidInsulinType
+    case doseRateMissing
+    case doseVolumeMissing
+}
+
 public struct AlgorithmInputFixture: AlgorithmInput {
     public var predictionStart: Date
     public var glucoseHistory: [FixtureGlucoseSample]
@@ -113,7 +120,7 @@ extension AlgorithmInputFixture: Codable {
 
         if let rawRecommendationInsulinType = try container.decodeIfPresent(String.self, forKey: .recommendationInsulinType) {
             guard let decodedRecommendationInsulinType = FixtureInsulinType(rawValue: rawRecommendationInsulinType) else {
-                throw AlgorithmInputDecodingError.invalidInsulinType
+                throw AlgorithmInputFixtureDecodingError.invalidInsulinType
             }
             self.recommendationInsulinType = decodedRecommendationInsulinType
         } else {
@@ -122,7 +129,7 @@ extension AlgorithmInputFixture: Codable {
 
         if let rawRecommendationType = try container.decodeIfPresent(String.self, forKey: .recommendationType) {
             guard let decodedRecommendationType = DoseRecommendationType(rawValue: rawRecommendationType) else {
-                throw AlgorithmInputDecodingError.invalidDoseRecommendationType
+                throw AlgorithmInputFixtureDecodingError.invalidDoseRecommendationType
             }
             self.recommendationType = decodedRecommendationType
         } else {

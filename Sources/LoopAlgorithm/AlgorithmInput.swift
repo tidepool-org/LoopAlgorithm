@@ -9,15 +9,8 @@
 import Foundation
 import HealthKit
 
-public enum AlgorithmInputDecodingError: Error {
-    case invalidDoseRecommendationType
-    case invalidInsulinType
-    case doseRateMissing
-    case doseVolumeMissing
-}
 
 public protocol AlgorithmInput {
-
     associatedtype CarbType: CarbEntry
     associatedtype GlucoseType: GlucoseSampleValue
     associatedtype InsulinDoseType: InsulinDose
@@ -40,4 +33,5 @@ public protocol AlgorithmInput {
     var recommendationType: DoseRecommendationType { get }
     var automaticBolusApplicationFactor: Double? { get }
 }
+
 

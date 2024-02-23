@@ -41,3 +41,4 @@ public struct AlgorithmOutput<CarbEntryType: CarbEntry> {
         }
     }
 }
+

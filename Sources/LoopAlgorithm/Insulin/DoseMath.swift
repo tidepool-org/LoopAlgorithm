@@ -194,7 +194,7 @@ extension Array where Element: GlucoseValue {
 
         // For each prediction above target, determine the amount of insulin necessary to correct glucose based on the modeled effectiveness of the insulin at that time
         for prediction in self {
-            guard prediction.startDate >= date else {
+            guard prediction.startDate >= date && prediction.startDate <= date.addingTimeInterval(model.effectDuration) else {
                 continue
             }
 

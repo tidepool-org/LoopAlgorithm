@@ -53,6 +53,19 @@ final class LoopAlgorithmTests: XCTestCase {
         XCTAssertEqual(output.recommendation, recommendation)
     }
 
+    func testAlgorithmWithLongAbsorbingCarbs() throws {
+        let now = ISO8601DateFormatter().date(from: "2024-01-03T12:00:00+0000")!
+        var input = AlgorithmInputFixture.mock(for: now)
+        input.recommendationType = .manualBolus
+        input.carbEntries.append(FixtureCarbEntry(absorptionTime: .hours(6), startDate: now, quantity: .carbs(value: 50)))
+
+        let output = LoopAlgorithm.run(input: input)
+
+        XCTAssertEqual(output.activeCarbs, 50)
+        XCTAssertEqual(output.recommendation!.manual!.amount, 5.83, accuracy: 0.01)
+    }
+
+
     func testAlgorithmShouldBeDateIndependent() throws {
         let now = Date()
         var a = AlgorithmInputFixture.mock(for: now)

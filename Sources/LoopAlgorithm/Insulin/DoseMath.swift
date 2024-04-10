@@ -252,19 +252,12 @@ extension Array where Element: GlucoseValue {
                 effectedSensitivity: Swift.max(.ulpOfOne, effectedSensitivity)
             )
 
-            guard correctionUnits > 0 else {
-                continue
+            if correctionUnits > 0 && (minCorrectionUnits == nil || correctionUnits < minCorrectionUnits!) {
+                correctingGlucose = prediction
+                minCorrectionUnits = correctionUnits
             }
 
-            // Update the correction only if we've found a new minimum
-            guard minCorrectionUnits == nil || correctionUnits < minCorrectionUnits! else {
-                continue
-            }
-
-            correctingGlucose = prediction
-            minCorrectionUnits = correctionUnits
-
-            if prediction.startDate > endOfAbsorption {
+            if prediction.startDate >= endOfAbsorption {
                 break
             }
         }

@@ -442,7 +442,7 @@ public struct LoopAlgorithm {
                 }
             }
 
-            let forecastEnd = input.predictionStart.addingTimeInterval(InsulinMath.defaultInsulinActivityDuration)
+            let forecastEnd = input.predictionStart.addingTimeInterval(input.recommendationInsulinModel.effectDuration).dateCeiledToTimeInterval(GlucoseMath.defaultDelta)
 
             guard let sensitivityEndDate = input.sensitivity.last?.endDate, sensitivityEndDate >= forecastEnd else {
                 throw AlgorithmError.sensitivityTimelineIncomplete

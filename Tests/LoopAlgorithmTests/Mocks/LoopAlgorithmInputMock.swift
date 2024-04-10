@@ -17,6 +17,8 @@ extension AlgorithmInputFixture {
             return now.addingTimeInterval(interval)
         }
 
+        let forecastEnd = now.addingTimeInterval(InsulinMath.defaultInsulinActivityDuration).dateCeiledToTimeInterval(GlucoseMath.defaultDelta)
+
         return AlgorithmInputFixture(
             predictionStart: now,
             glucoseHistory: [
@@ -28,7 +30,7 @@ extension AlgorithmInputFixture {
             doses: [],
             carbEntries: [],
             basal: [AbsoluteScheduleValue(startDate: d(.hours(-10)), endDate: now, value: 1.0)],
-            sensitivity: [AbsoluteScheduleValue(startDate: d(.hours(-10)), endDate: now.addingTimeInterval(InsulinMath.defaultInsulinActivityDuration), value: .glucose(value: 55))],
+            sensitivity: [AbsoluteScheduleValue(startDate: d(.hours(-10)), endDate: forecastEnd, value: .glucose(value: 55))],
             carbRatio: [AbsoluteScheduleValue(startDate: d(.hours(-10)), endDate: now, value: 10)],
             target: [AbsoluteScheduleValue(startDate: d(.hours(-10)), endDate: now, value: ClosedRange(uncheckedBounds: (lower: .glucose(value: 100), upper: .glucose(value: 110))))],
             suspendThreshold: .glucose(value: 65),

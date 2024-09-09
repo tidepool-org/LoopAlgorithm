@@ -96,6 +96,44 @@ class InsulinMathTests: XCTestCase {
         }
     }
 
+    func testGlucoseEffectsHistory() {
+        let startDate = dateFormatter.date(from: "2015-10-15T00:00:00")!
+        func t(_ offset: TimeInterval) -> Date { return startDate.addingTimeInterval(offset) }
+
+        let doses: [BasalRelativeDose] = [
+            BasalRelativeDose(type: .bolus, startDate: t(.hours(1)), endDate: t(.hours(1.1)), volume: 5),
+            BasalRelativeDose(type: .bolus, startDate: t(.hours(2)), endDate: t(.hours(2.1)), volume: 5)
+        ]
+
+        let sensitivity: [AbsoluteScheduleValue<HKQuantity>] = [
+            AbsoluteScheduleValue(startDate: t(.hours(1)), endDate: t(.hours(8)), value: HKQuantity(unit: .milligramsPerDeciliter, doubleValue: 50))
+        ]
+
+        let effects = doses.glucoseEffects(insulinSensitivityHistory: sensitivity)
+
+        XCTAssertEqual(effects.count, 89)
+        XCTAssertEqual(effects.last!.quantity.doubleValue(for: .milligramsPerDeciliter), -500)
+    }
+
+    func testGlucoseEffectsTimeline() {
+        let startDate = dateFormatter.date(from: "2015-10-15T00:00:00")!
+        func t(_ offset: TimeInterval) -> Date { return startDate.addingTimeInterval(offset) }
+
+        let doses: [BasalRelativeDose] = [
+            BasalRelativeDose(type: .bolus, startDate: t(.hours(1)), endDate: t(.hours(1.1)), volume: 5),
+            BasalRelativeDose(type: .bolus, startDate: t(.hours(2)), endDate: t(.hours(2.1)), volume: 5)
+        ]
+
+        let sensitivity: [AbsoluteScheduleValue<HKQuantity>] = [
+            AbsoluteScheduleValue(startDate: t(.hours(1)), endDate: t(.hours(9)), value: HKQuantity(unit: .milligramsPerDeciliter, doubleValue: 50))
+        ]
+
+        let effects = doses.glucoseEffects(insulinSensitivityTimeline: sensitivity)
+
+        XCTAssertEqual(effects.count, 89)
+        XCTAssertEqual(effects.last!.quantity.doubleValue(for: .milligramsPerDeciliter), -500)
+    }
+
     func testGlucoseEffectFromShortTempBasal() {
         let startDate = dateFormatter.date(from: "2015-07-13T12:02:37")!
         let endDate = dateFormatter.date(from: "2015-07-13T12:07:37")!

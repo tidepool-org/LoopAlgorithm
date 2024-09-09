@@ -399,7 +399,6 @@ extension Collection where Element == BasalRelativeDose {
 
         var lastDate = start
         var date = start
-        var effectSum: Double = 0
         var values = [GlucoseEffect]()
         let unit = HKUnit.milligramsPerDeciliter
 
@@ -412,6 +411,9 @@ extension Collection where Element == BasalRelativeDose {
 
                 // Sum effects over pertinent ISF timeline segments
                 let isfSegments = insulinSensitivityTimeline.filterDateRange(lastDate, date)
+                if isfSegments.count == 0 {
+                    preconditionFailure("ISF Timeline must cover dose absorption duration")
+                }
                 return value + isfSegments.reduce(0, { partialResult, segment in
                     let start = Swift.max(lastDate, segment.startDate)
                     let end = Swift.min(date, segment.endDate)
@@ -419,8 +421,7 @@ extension Collection where Element == BasalRelativeDose {
                 })
             }
 
-            effectSum += value
-            values.append(GlucoseEffect(startDate: date, quantity: HKQuantity(unit: unit, doubleValue: effectSum)))
+            values.append(GlucoseEffect(startDate: date, quantity: HKQuantity(unit: unit, doubleValue: value)))
             lastDate = date
             date = date.addingTimeInterval(delta)
         } while date <= end

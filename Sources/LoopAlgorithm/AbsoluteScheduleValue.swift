@@ -16,6 +16,10 @@ public struct AbsoluteScheduleValue<T>: TimelineValue {
         self.endDate = endDate
         self.value = value
     }
+
+    public var duration: TimeInterval {
+        return endDate.timeIntervalSince(startDate)
+    }
 }
 
 extension AbsoluteScheduleValue: Equatable where T: Equatable {}

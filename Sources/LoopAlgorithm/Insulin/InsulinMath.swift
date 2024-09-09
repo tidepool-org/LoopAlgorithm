@@ -166,7 +166,88 @@ extension InsulinDose {
     }
 }
 
+public extension Array where Element == AbsoluteScheduleValue<Double> {
+    func trimmed(from start: Date? = nil, to end: Date? = nil) -> [AbsoluteScheduleValue<Double>] {
+        return self.compactMap { (entry) -> AbsoluteScheduleValue<Double>? in
+            if let start, entry.endDate < start {
+                return nil
+            }
+            if let end, entry.startDate > end {
+                return nil
+            }
+            return AbsoluteScheduleValue(
+                startDate: Swift.max(start ?? entry.startDate, entry.startDate),
+                endDate: Swift.min(end ??  entry.endDate, entry.endDate),
+                value: entry.value
+            )
+        }
+    }
+}
+
+
 extension Collection where Element: InsulinDose {
+
+    /// Returns an array of BasalRelativeDoses, based on annotating a sequence of dose entries with the given basal history.
+    ///
+    /// Doses which cross time boundaries in the basal rate schedule are split into multiple entries.
+    ///
+    /// - Parameter basalSchedule: A history of basal rates covering the timespan of these doses.
+    /// - Parameter fillBasalGaps: If true, the returned array will interpolate doses from basal schedule for those parts of the 
+    ///                             timeline that this array does not cover.
+    /// - Returns: An array of annotated dose entries
+    public func annotated(with basalHistory: [AbsoluteScheduleValue<Double>], fillBasalGaps: Bool = false) -> [BasalRelativeDose] {
+        var annotatedDoses: [BasalRelativeDose] = []
+
+        let basalAdjustments = self.filter { $0.deliveryType == .basal }
+
+        let date = [basalHistory.first?.startDate, basalAdjustments.first?.startDate].compactMap { $0 }.min()
+
+        if !fillBasalGaps {
+            guard self.count > 0 else {
+                return []
+            }
+        }
+
+        guard var date else {
+            return []
+        }
+
+        func fillGapWithBasal(start: Date, end: Date) -> [BasalRelativeDose] {
+            let basals = basalHistory.trimmed(from: start, to: end)
+            return basals.map { entry in
+                BasalRelativeDose(
+                    type: .basal(scheduledRate: entry.value),
+                    startDate: entry.startDate,
+                    endDate: entry.endDate,
+                    volume: entry.value * entry.duration.hours
+                )
+            }
+        }
+
+        for dose in self {
+            if dose.deliveryType != .basal {
+                annotatedDoses.append(BasalRelativeDose.fromBolus(dose: dose))
+                continue
+            }
+
+            if date < dose.startDate && fillBasalGaps {
+                // Fill date <-> dose.startDate gap with basal
+                annotatedDoses.append(contentsOf: fillGapWithBasal(start: date, end: dose.startDate))
+            }
+
+            let basalItems = basalHistory.filterDateRange(dose.startDate, dose.endDate)
+            annotatedDoses += dose.annotated(with: basalItems)
+            date = dose.endDate
+        }
+
+        let endDate = [basalHistory.last?.endDate, basalAdjustments.last?.endDate].compactMap { $0 }.max() ?? date
+
+        if date < endDate && fillBasalGaps {
+            annotatedDoses.append(contentsOf: fillGapWithBasal(start: date, end: endDate))
+        }
+
+        return annotatedDoses
+    }
 
     /// Annotates a sequence of dose entries with the configured basal history
     ///
@@ -188,6 +269,7 @@ extension Collection where Element: InsulinDose {
 
         return annotatedDoses
     }
+
 }
 
 extension Collection where Element == BasalRelativeDose {

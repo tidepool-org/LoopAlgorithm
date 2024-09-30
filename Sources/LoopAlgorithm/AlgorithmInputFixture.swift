@@ -187,3 +187,4 @@ extension AlgorithmInputFixture: Codable {
         case recommendationType
     }
 }
+

@@ -62,3 +62,34 @@ extension BasalRelativeDose {
         )
     }
 }
+
+extension BasalRelativeDoseType: Codable {}
+
+extension BasalRelativeDose: Codable {
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.type = try container.decode(BasalRelativeDoseType.self, forKey: .type)
+        self.startDate = try container.decode(Date.self, forKey: .startDate)
+        self.endDate = try container.decode(Date.self, forKey: .endDate)
+        self.volume = try container.decode(Double.self, forKey: .volume)
+        // Not encoded atm. Could at some point define some "fixture" models"
+        self.insulinModel = ExponentialInsulinModelPreset.rapidActingAdult.model
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(type, forKey: .type)
+        try container.encode(startDate, forKey: .startDate)
+        try container.encode(endDate, forKey: .endDate)
+        try container.encode(volume, forKey: .volume)
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case type
+        case startDate
+        case endDate
+        case volume
+    }
+
+}
+

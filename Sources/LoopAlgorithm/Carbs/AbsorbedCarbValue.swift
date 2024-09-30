@@ -63,3 +63,58 @@ public struct AbsorbedCarbValue: SampleValue {
         return estimatedDate.start
     }
 }
+
+extension AbsorbedCarbValue: Codable {
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.observed = HKQuantity(
+            unit: .gram(),
+            doubleValue: try container.decode(Double.self, forKey: .observed)
+        )
+        self.clamped = HKQuantity(
+            unit: .gram(),
+            doubleValue: try container.decode(Double.self, forKey: .clamped)
+        )
+        self.total = HKQuantity(
+            unit: .gram(),
+            doubleValue: try container.decode(Double.self, forKey: .total)
+        )
+        self.remaining = HKQuantity(
+            unit: .gram(),
+            doubleValue: try container.decode(Double.self, forKey: .remaining)
+        )
+
+        let observedDateStart = try container.decode(Date.self, forKey: .observedDateStart)
+        let observedDateDuration = try container.decode(Double.self, forKey: .observedDateDuration)
+        self.observedDate = DateInterval(start: observedDateStart, duration: observedDateDuration)
+
+        self.estimatedTimeRemaining = try container.decode(Double.self, forKey: .estimatedTimeRemaining)
+        self.timeToAbsorbObservedCarbs = try container.decode(Double.self, forKey: .timeToAbsorbObservedCarbs)
+
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(observed.doubleValue(for: .gram()), forKey: .observed)
+        try container.encode(clamped.doubleValue(for: .gram()), forKey: .observed)
+        try container.encode(total.doubleValue(for: .gram()), forKey: .observed)
+        try container.encode(remaining.doubleValue(for: .gram()), forKey: .observed)
+
+        try container.encode(observedDate.start, forKey: .observedDateStart)
+        try container.encode(observedDate.duration, forKey: .observedDateDuration)
+
+        try container.encode(estimatedTimeRemaining, forKey: .estimatedTimeRemaining)
+        try container.encode(timeToAbsorbObservedCarbs, forKey: .timeToAbsorbObservedCarbs)
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case observed
+        case clamped
+        case total
+        case remaining
+        case observedDateStart
+        case observedDateDuration
+        case estimatedTimeRemaining
+        case timeToAbsorbObservedCarbs
+    }
+}

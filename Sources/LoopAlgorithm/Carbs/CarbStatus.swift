@@ -128,3 +128,5 @@ extension CarbStatus {
         }, quantity.doubleValue(for: unit))
     }
 }
+
+extension CarbStatus<FixtureCarbEntry>: Codable {}

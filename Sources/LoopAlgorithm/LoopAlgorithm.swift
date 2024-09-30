@@ -48,6 +48,55 @@ public struct LoopAlgorithmEffects<CarbStatusType: CarbEntry> {
     }
 }
 
+extension LoopAlgorithmEffects<FixtureCarbEntry>: Codable {
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.insulin = try container.decode([GlucoseEffect].self, forKey: .insulin)
+        self.carbs = try container.decode([GlucoseEffect].self, forKey: .carbs)
+        self.carbStatus = try container.decode([CarbStatus<FixtureCarbEntry>].self, forKey: .carbStatus)
+        self.retrospectiveCorrection = try container.decode([GlucoseEffect].self, forKey: .retrospectiveCorrection)
+        self.momentum = try container.decode([GlucoseEffect].self, forKey: .momentum)
+        self.insulinCounteraction = try container.decode([GlucoseEffectVelocity].self, forKey: .insulinCounteraction)
+        self.retrospectiveGlucoseDiscrepancies = try container.decode([GlucoseChange].self, forKey: .retrospectiveGlucoseDiscrepancies)
+
+        if let totalRetrospectiveCorrectionEffectValue = try container.decodeIfPresent(Double.self, forKey: .totalRetrospectiveCorrectionEffect) {
+            self.totalRetrospectiveCorrectionEffect = HKQuantity(
+                unit: .milligramsPerDeciliter,
+                doubleValue: totalRetrospectiveCorrectionEffectValue
+            )
+        }
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(insulin, forKey: .insulin)
+        try container.encode(carbs, forKey: .carbs)
+        try container.encode(carbStatus, forKey: .carbStatus)
+        try container.encode(retrospectiveCorrection, forKey: .retrospectiveCorrection)
+        try container.encode(momentum, forKey: .momentum)
+        try container.encode(insulinCounteraction, forKey: .insulinCounteraction)
+        try container.encode(retrospectiveGlucoseDiscrepancies, forKey: .retrospectiveGlucoseDiscrepancies)
+        if let totalRetrospectiveCorrectionEffect {
+            try container.encode(
+                totalRetrospectiveCorrectionEffect.doubleValue(for: .milligramsPerDeciliter),
+                forKey: .totalRetrospectiveCorrectionEffect
+            )
+        }
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case insulin
+        case carbs
+        case carbStatus
+        case retrospectiveCorrection
+        case momentum
+        case insulinCounteraction
+        case retrospectiveGlucoseDiscrepancies
+        case totalRetrospectiveCorrectionEffect
+    }
+}
+
+
 public struct AlgorithmEffectsOptions: OptionSet {
     public let rawValue: UInt8
 

@@ -9,3 +9,11 @@ Please understand that this project:
 * Is highly experimental
 * Is not approved for therapy
 
+## Command Line Runner
+
+There is a command line utility that will run the algorithm with a scenario input file:
+
+```
+swift build
+./.build/debug/LoopAlgorithmRunner Tests/LoopAlgorithmTests/Fixtures/suspend_scenario.json > output.json
+```

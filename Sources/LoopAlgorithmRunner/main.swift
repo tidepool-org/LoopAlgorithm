@@ -20,7 +20,7 @@ func readInputFile(_ path: String) throws -> AlgorithmInputFixture {
 // Main execution logic
 func main() {
     guard CommandLine.arguments.count > 1 else {
-        print("Usage: LoopAlgorithmCLI <input_file_path>")
+        print("Usage: LoopAlgorithmRunner <input_file_path>")
         exit(1)
     }
 

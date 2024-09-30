@@ -13,7 +13,7 @@ jobs:
       - run:
           name: Test
           command: |
-            set -o pipefail && xcodebuild -scheme LoopAlgorithm test -destination "platform=iOS Simulator,name=iPhone 15,OS=latest" | xcpretty
+            set -o pipefail && xcodebuild -scheme LoopAlgorithm test -destination "platform=iOS Simulator,name=iPhone 16,OS=latest" | xcpretty
       - store_test_results:
           path: test_output
   package:
@@ -24,7 +24,7 @@ jobs:
       - run:
           name: Build LoopAlgorithmPackage
           command: |
-            set -o pipefail && xcodebuild build -scheme LoopAlgorithm -destination "platform=iOS Simulator,name=iPhone 15,OS=latest" | xcpretty
+            set -o pipefail && xcodebuild build -scheme LoopAlgorithm -destination "platform=iOS Simulator,name=iPhone 16,OS=latest" | xcpretty
 #
 # Workflows
 #

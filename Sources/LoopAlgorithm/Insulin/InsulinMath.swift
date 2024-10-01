@@ -116,7 +116,7 @@ extension InsulinDose {
     ///
     /// - Parameter basalHistory: The history of basal schedule values to apply. Only schedule values overlapping the dose should be included.
     /// - Returns: An array of annotated doses
-    fileprivate func annotated(with basalHistory: [AbsoluteScheduleValue<Double>]) -> [BasalRelativeDose] {
+    func annotated(with basalHistory: [AbsoluteScheduleValue<Double>]) -> [BasalRelativeDose] {
 
         guard deliveryType == .basal else {
             preconditionFailure("basalDeliveryTotal called on dose that is not a temp basal!")

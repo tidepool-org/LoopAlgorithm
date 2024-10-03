@@ -453,6 +453,47 @@ class CarbMathTests: XCTestCase {
             absorptionModel: LinearAbsorption()
         )
 
+        func printQuantityOrString(_ quantity: HKQuantity?) -> String {
+            "\(quantity?.description ?? "NA")"
+        }
+
+        func printQuantityOrString(_ interval: TimeInterval?) -> String {
+            "\(interval?.description ?? "NA")"
+        }
+
+        for (index, status) in statuses.enumerated() {
+          print("Status \(index):")
+          print(" Entry:")
+          print("  Quantity: \(printQuantityOrString(status.entry.quantity))")
+          print("  Start Date: \(status.entry.startDate)")
+          print("  Absorption Time: \(status.entry.absorptionTime)")
+          print(" Absorption:")
+          print("  Observed: \(printQuantityOrString(status.absorption?.observed))")
+          print("  Clamped: \(printQuantityOrString(status.absorption?.clamped))")
+          print("  Total: \(printQuantityOrString(status.absorption?.total))")
+          print("  Remaining: \(printQuantityOrString(status.absorption?.remaining))")
+          if let observedDate = status.absorption?.observedDate {
+            print("  Observed Date Start: \(observedDate.start)")
+            print("  Observed Date Duration: \(observedDate.duration)")
+          } else {
+            print("  Observed Date: N/A")
+          }
+          print("  Estimated Time Remaining: \(printQuantityOrString(status.absorption?.estimatedTimeRemaining))")
+          print("  Time to Absorb Observed Carbs: \(printQuantityOrString(status.absorption?.timeToAbsorbObservedCarbs))")
+          print(" Observed Timeline:")
+          if let observedTimeline = status.observedTimeline {
+            for (timelineIndex, timeline) in observedTimeline.enumerated() {
+              print("  Timeline \(timelineIndex):")
+              print("   Start Date: \(timeline.startDate)")
+              print("   End Date: \(timeline.endDate)")
+              print("   Value: \(printQuantityOrString(timeline.value))")
+            }
+          } else {
+            print("  No Observed Timeline")
+          }
+          print()
+        }
+
         XCTAssertEqual(statuses.count, 1)
         XCTAssertNotNil(statuses[0].absorption)
 

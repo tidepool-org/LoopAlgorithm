@@ -139,6 +139,9 @@ extension AlgorithmInputFixture: Codable {
         } else {
             self.recommendationType = .automaticBolus
         }
+
+        self.automaticBolusApplicationFactor = try container.decodeIfPresent(Double.self, forKey: .automaticBolusApplicationFactor)
+
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -171,7 +174,7 @@ extension AlgorithmInputFixture: Codable {
         try container.encode(useMidAbsorptionISF, forKey: .useMidAbsorptionISF)
         try container.encode(recommendationInsulinType.rawValue, forKey: .recommendationInsulinType)
         try container.encode(recommendationType.rawValue, forKey: .recommendationType)
-
+        try container.encode(automaticBolusApplicationFactor, forKey: .automaticBolusApplicationFactor)
     }
 
     private enum CodingKeys: String, CodingKey {
@@ -191,6 +194,7 @@ extension AlgorithmInputFixture: Codable {
         case useMidAbsorptionISF
         case recommendationInsulinType
         case recommendationType
+        case automaticBolusApplicationFactor
     }
 }
 

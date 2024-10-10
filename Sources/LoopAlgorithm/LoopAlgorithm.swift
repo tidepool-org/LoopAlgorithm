@@ -161,6 +161,7 @@ public struct LoopAlgorithm {
         algorithmEffectsOptions: AlgorithmEffectsOptions = .all,
         useIntegralRetrospectiveCorrection: Bool = false,
         includingPositiveVelocityAndRC: Bool = true,
+        useMidAbsorptionISF: Bool = false,
         carbAbsorptionModel: CarbAbsorptionComputable = PiecewiseLinearAbsorption()
     ) -> LoopPrediction<CarbType> where CarbType: CarbEntry, GlucoseType: GlucoseSampleValue, InsulinDoseType: InsulinDose {
 
@@ -209,10 +210,17 @@ public struct LoopAlgorithm {
                 maxDate = glucoseEnd
             }
 
-            insulinEffects = dosesRelativeToBasal.glucoseEffects(
-                insulinSensitivityHistory: sensitivity,
-                from: minDate,
-                to: maxDate)
+            if useMidAbsorptionISF {
+                insulinEffects = dosesRelativeToBasal.glucoseEffectsMidAbsorptionISF(
+                    insulinSensitivityHistory: sensitivity,
+                    from: minDate,
+                    to: maxDate)
+            } else {
+                insulinEffects = dosesRelativeToBasal.glucoseEffects(
+                    insulinSensitivityHistory: sensitivity,
+                    from: minDate,
+                    to: maxDate)
+            }
 
             // ICE
             insulinCounteractionEffects = glucoseHistory.counteractionEffects(to: insulinEffects)
@@ -469,6 +477,7 @@ public struct LoopAlgorithm {
             algorithmEffectsOptions: .all,
             useIntegralRetrospectiveCorrection: input.useIntegralRetrospectiveCorrection,
             includingPositiveVelocityAndRC: input.includePositiveVelocityAndRC,
+            useMidAbsorptionISF: input.useMidAbsorptionISF,
             carbAbsorptionModel: input.carbAbsorptionModel.model
         )
 

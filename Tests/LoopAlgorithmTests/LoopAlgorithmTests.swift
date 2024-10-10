@@ -175,6 +175,34 @@ final class LoopAlgorithmTests: XCTestCase {
         }
     }
 
+    func testMidAborptionISFFlag() {
+        let now = ISO8601DateFormatter().date(from: "2024-01-03T00:00:00+0000")!
+        var input = AlgorithmInputFixture.mock(for: now)
+
+        input.doses = [
+            FixtureInsulinDose(deliveryType: .bolus, startDate: now, endDate: now.addingTimeInterval(20), volume: 1)
+        ]
+
+        let isfStart = now.addingTimeInterval(.hours(-10))
+        let isfMid = now.addingTimeInterval(.hours(1.5))
+        let isfEnd = now.addingTimeInterval(InsulinMath.defaultInsulinActivityDuration).dateCeiledToTimeInterval(GlucoseMath.defaultDelta)
+
+        // ISF Changing mid-aborption
+        input.sensitivity = [
+            AbsoluteScheduleValue(startDate: isfStart, endDate: isfMid, value: .glucose(value: 50)),
+            AbsoluteScheduleValue(startDate: isfMid, endDate: isfEnd, value: .glucose(value: 100))
+        ]
+
+        // With Mid-absorption ISF flag = false
+        var output = LoopAlgorithm.run(input: input)
+        XCTAssertEqual(output.effects.insulin.last!.quantity.doubleValue(for: .milligramsPerDeciliter), -50)
+
+        // With Mid-absorption ISF flag = true
+        input.useMidAbsorptionISF = true
+        output = LoopAlgorithm.run(input: input)
+        XCTAssertEqual(output.effects.insulin.last!.quantity.doubleValue(for: .milligramsPerDeciliter), -83, accuracy: 0.5)
+    }
+
     func testAutoBolusMaxIOBClamping() async {
         let now = ISO8601DateFormatter().date(from: "2020-03-11T12:13:14-0700")!
 

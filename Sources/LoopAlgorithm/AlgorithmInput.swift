@@ -28,6 +28,7 @@ public protocol AlgorithmInput {
     var maxBasalRate: Double { get }
     var useIntegralRetrospectiveCorrection: Bool { get }
     var includePositiveVelocityAndRC: Bool { get }
+    var useMidAbsorptionISF: Bool { get }
     var carbAbsorptionModel: CarbAbsorptionModel { get }
     var recommendationInsulinModel: InsulinModel { get }
     var recommendationType: DoseRecommendationType { get }

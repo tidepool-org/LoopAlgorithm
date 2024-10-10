@@ -115,7 +115,7 @@ class InsulinMathTests: XCTestCase {
         XCTAssertEqual(effects.last!.quantity.doubleValue(for: .milligramsPerDeciliter), -500)
     }
 
-    func testGlucoseEffectsTimeline() {
+    func testGlucoseEffectsMidAbsorptionISFTimeline() {
         let startDate = dateFormatter.date(from: "2015-10-15T00:00:00")!
         func t(_ offset: TimeInterval) -> Date { return startDate.addingTimeInterval(offset) }
 
@@ -128,10 +128,10 @@ class InsulinMathTests: XCTestCase {
             AbsoluteScheduleValue(startDate: t(.hours(1)), endDate: t(.hours(9)), value: HKQuantity(unit: .milligramsPerDeciliter, doubleValue: 50))
         ]
 
-        let effects = doses.glucoseEffects(insulinSensitivityTimeline: sensitivity)
+        let effects = doses.glucoseEffectsMidAbsorptionISF(insulinSensitivityHistory: sensitivity)
 
         XCTAssertEqual(effects.count, 89)
-        XCTAssertEqual(effects.last!.quantity.doubleValue(for: .milligramsPerDeciliter), -500)
+        XCTAssertEqual(effects.last!.quantity.doubleValue(for: .milligramsPerDeciliter), -500, accuracy: 0.5)
     }
 
     func testGlucoseEffectFromShortTempBasal() {

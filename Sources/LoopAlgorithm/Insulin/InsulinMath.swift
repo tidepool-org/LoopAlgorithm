@@ -51,7 +51,7 @@ extension BasalRelativeDose {
         }
     }
 
-    private func continuousDeliveryGlucoseEffect(at date: Date, delta: TimeInterval) -> Double {
+    private func continuousDeliveryPercentEffect(at date: Date, delta: TimeInterval) -> Double {
         let doseDuration = endDate.timeIntervalSince(startDate)  // t1
         let time = date.timeIntervalSince(startDate)
         var value: Double = 0
@@ -84,7 +84,7 @@ extension BasalRelativeDose {
         if endDate.timeIntervalSince(startDate) <= 1.05 * delta {
             return netBasalUnits * -insulinSensitivity * (1.0 - insulinModel.percentEffectRemaining(at: time))
         } else {
-            return netBasalUnits * -insulinSensitivity * continuousDeliveryGlucoseEffect(at: date, delta: delta)
+            return netBasalUnits * -insulinSensitivity * continuousDeliveryPercentEffect(at: date, delta: delta)
         }
     }
 
@@ -97,12 +97,15 @@ extension BasalRelativeDose {
         }
 
         // Consider doses within the delta time window as momentary
+        let effect: Double
         if endDate.timeIntervalSince(startDate) <= 1.05 * delta {
-            let effect = insulinModel.percentEffectRemaining(at: start) - insulinModel.percentEffectRemaining(at: end)
-            return netBasalUnits * -insulinSensitivity * effect
+            effect = insulinModel.percentEffectRemaining(at: start) - insulinModel.percentEffectRemaining(at: end)
         } else {
-            return netBasalUnits * -insulinSensitivity * continuousDeliveryGlucoseEffect(at: interval.end, delta: delta)
+            let startPercentRemaining = 1 - continuousDeliveryPercentEffect(at: interval.start, delta: delta)
+            let endPercentRemaining = 1 - continuousDeliveryPercentEffect(at: interval.end, delta: delta)
+            effect = startPercentRemaining - endPercentRemaining
         }
+        return netBasalUnits * -insulinSensitivity * effect
     }
 }
 
@@ -317,11 +320,8 @@ extension Collection where Element == BasalRelativeDose {
      - returns: Insulin amount remaining at specified time
      */
     public func insulinOnBoard(
-        at date: Date? = nil
+        at date: Date
     ) -> Double {
-
-        let date = date ?? Date()
-
         return reduce(0) { (value, dose) -> Double in
             return value + dose.insulinOnBoard(at: date, delta: GlucoseMath.defaultDelta)
         }
@@ -379,14 +379,14 @@ extension Collection where Element == BasalRelativeDose {
     ///
     /// - Parameters:
     ///   - longestEffectDuration: The longest duration that a dose could be active.
-    ///   - insulinSensitivityTimeline: A timeline of glucose effect per unit of insulin
+    ///   - insulinSensitivityHistory: A timeline of glucose effect per unit of insulin
     ///   - start: The earliest date of effects to return
     ///   - end: The latest date of effects to return
     ///   - delta: The interval between returned effects
     /// - Returns: An array of glucose effects for the duration of the doses
-    public func glucoseEffects(
+    public func glucoseEffectsMidAbsorptionISF(
         longestEffectDuration: TimeInterval = InsulinMath.defaultInsulinActivityDuration,
-        insulinSensitivityTimeline: [AbsoluteScheduleValue<HKQuantity>],
+        insulinSensitivityHistory: [AbsoluteScheduleValue<HKQuantity>],
         from start: Date? = nil,
         to end: Date? = nil,
         delta: TimeInterval = TimeInterval(/* minutes: */60 * 5)
@@ -402,22 +402,24 @@ extension Collection where Element == BasalRelativeDose {
         var values = [GlucoseEffect]()
         let unit = HKUnit.milligramsPerDeciliter
 
+        var value: Double = 0
         repeat {
             // Sum effects over doses
-            let value = reduce(0) { (value, dose) -> Double in
+            value = reduce(value) { (value, dose) -> Double in
                 guard date != lastDate else {
                     return 0
                 }
 
                 // Sum effects over pertinent ISF timeline segments
-                let isfSegments = insulinSensitivityTimeline.filterDateRange(lastDate, date)
+                let isfSegments = insulinSensitivityHistory.filterDateRange(lastDate, date)
                 if isfSegments.count == 0 {
                     preconditionFailure("ISF Timeline must cover dose absorption duration")
                 }
                 return value + isfSegments.reduce(0, { partialResult, segment in
                     let start = Swift.max(lastDate, segment.startDate)
                     let end = Swift.min(date, segment.endDate)
-                    return partialResult + dose.glucoseEffect(during: DateInterval(start: start, end: end), insulinSensitivity: segment.value.doubleValue(for: unit), delta: delta)
+                    let effect = dose.glucoseEffect(during: DateInterval(start: start, end: end), insulinSensitivity: segment.value.doubleValue(for: unit), delta: delta)
+                    return partialResult + effect
                 })
             }
 

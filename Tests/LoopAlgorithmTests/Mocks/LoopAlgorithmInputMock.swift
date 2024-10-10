@@ -10,7 +10,7 @@ import HealthKit
 @testable import LoopAlgorithm
 
 extension AlgorithmInputFixture {
-    /// Mocks stable, in range glucose, no insulin, no carbs, with reasonable settings
+    /// Mocks rising glucose, no insulin, no carbs, with reasonable settings
     static func mock(for now: Date = Date()) -> AlgorithmInputFixture {
 
         func d(_ interval: TimeInterval) -> Date {

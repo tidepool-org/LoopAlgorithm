@@ -13,7 +13,8 @@ public enum AlgorithmError: Error {
     case glucoseTooOld
     case basalTimelineIncomplete
     case missingSuspendThreshold
-    case sensitivityTimelineIncomplete
+    case sensitivityTimelineStartsTooLate
+    case sensitivityTimelineEndsTooEarly
     case futureBasalNotAllowed
 }
 
@@ -130,6 +131,22 @@ public struct LoopAlgorithm {
     /// The amount of time since a given date that input data should be considered valid
     public static let inputDataRecencyInterval = TimeInterval(minutes: 15)
 
+    /// Calculates the needed interval for insulin sensitivity to run the algorithm
+    /// - Parameters:
+    ///   - doses: The active doses effecting the forecast
+    ///   - glucoseHistoryStart: The start date of glucose history
+    ///   - recommendationEffectInterval:The interval covering effects of a recommended dose
+    public static func timelineIntervalForSensitivity<DoseType: InsulinDose>(
+        doses: [DoseType],
+        glucoseHistoryStart: Date,
+        recommendationEffectInterval: DateInterval
+    ) -> DateInterval {
+        return (doses.effectsInterval() ?? DateInterval(start: glucoseHistoryStart, end: glucoseHistoryStart))
+            .extendedToInclude(glucoseHistoryStart)
+            .extendedToInclude(recommendationEffectInterval)
+            .extendedForSimulation()
+    }
+
     /// Generates a forecast predicting glucose.
     /// Outputs may be incomplete, if there are issues with the provided data, but as many intermediate derived fields as can be computed, will be computed.
     ///
@@ -186,40 +203,27 @@ public struct LoopAlgorithm {
 
             activeInsulin = dosesRelativeToBasal.insulinOnBoard(at: start)
 
-            var minDate = start
-            var maxDate = start
-
-            for dose in dosesRelativeToBasal {
-                if dose.startDate < minDate {
-                    minDate = dose.startDate
-                }
-
-                let doseEnd = dose.endDate.addingTimeInterval(dose.insulinModel.effectDuration)
-
-                if doseEnd > maxDate {
-                    maxDate = doseEnd
-                }
-            }
+            var insulinEffectsInterval = dosesRelativeToBasal.effectsInterval() ?? DateInterval(start: start, end: start)
 
             // Extend range of insulin effects to cover glucose, if needed
-            if let glucoseStart = glucoseHistory.first?.startDate, glucoseStart < minDate {
-                minDate = glucoseStart
+            if let glucoseStart = glucoseHistory.first?.startDate, glucoseStart < insulinEffectsInterval.start {
+                insulinEffectsInterval.start = glucoseStart
             }
 
-            if let glucoseEnd = glucoseHistory.last?.endDate, glucoseEnd > maxDate {
-                maxDate = glucoseEnd
+            if let glucoseEnd = glucoseHistory.last?.endDate, glucoseEnd > insulinEffectsInterval.end {
+                insulinEffectsInterval.end = glucoseEnd
             }
 
             if useMidAbsorptionISF {
                 insulinEffects = dosesRelativeToBasal.glucoseEffectsMidAbsorptionISF(
                     insulinSensitivityHistory: sensitivity,
-                    from: minDate,
-                    to: maxDate)
+                    from: insulinEffectsInterval.start,
+                    to: insulinEffectsInterval.end)
             } else {
                 insulinEffects = dosesRelativeToBasal.glucoseEffects(
                     insulinSensitivityHistory: sensitivity,
-                    from: minDate,
-                    to: maxDate)
+                    from: insulinEffectsInterval.start,
+                    to: insulinEffectsInterval.end)
             }
 
             // ICE
@@ -454,16 +458,6 @@ public struct LoopAlgorithm {
         return bolus
     }
 
-//    public static func recommendDose<CarbType>(input: any LoopAlgorithmInput) throws -> LoopAlgorithmDoseRecommendation {
-//        let output = run(input: input)
-//        switch output.recommendationResult {
-//        case .success(let recommendation):
-//            return recommendation
-//        case .failure(let error):
-//            throw error
-//        }
-//    }
-
     public static func run<LoopAlgorithmInputType: AlgorithmInput>(input: LoopAlgorithmInputType) -> AlgorithmOutput<LoopAlgorithmInputType.CarbType> {
 
         var prediction = LoopPrediction(
@@ -501,10 +495,25 @@ public struct LoopAlgorithm {
 
             let forecastEnd = input.predictionStart.addingTimeInterval(input.recommendationInsulinModel.effectDuration).dateCeiledToTimeInterval(GlucoseMath.defaultDelta)
 
-            guard let sensitivityEndDate = input.sensitivity.last?.endDate, sensitivityEndDate >= forecastEnd else {
-                throw AlgorithmError.sensitivityTimelineIncomplete
+            let glucoseStart = input.glucoseHistory.first?.startDate ?? input.predictionStart
+
+            // Make sure ISF covers needed timeline
+            let recommendationEffectInterval = DateInterval(
+                start: input.predictionStart,
+                duration: input.recommendationInsulinModel.effectDuration)
+            let neededISFInterval = timelineIntervalForSensitivity(
+                doses: input.doses,
+                glucoseHistoryStart: glucoseStart,
+                recommendationEffectInterval: recommendationEffectInterval
+            )
+            guard let sensitivityStartDate = input.sensitivity.first?.startDate, sensitivityStartDate <= neededISFInterval.start else {
+                throw AlgorithmError.sensitivityTimelineStartsTooLate
+            }
+            guard let sensitivityEndDate = input.sensitivity.last?.endDate, sensitivityEndDate >= neededISFInterval.end else {
+                throw AlgorithmError.sensitivityTimelineEndsTooEarly
             }
 
+            // Make sure Basal covers needed timeline
             guard let scheduledBasalRate = input.basal.closestPrior(to: input.predictionStart)?.value else {
                 throw AlgorithmError.basalTimelineIncomplete
             }

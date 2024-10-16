@@ -24,5 +24,27 @@ extension InsulinDose {
     var unitsPerHour: Double {
         return volume / duration.hours
     }
+}
 
+
+public extension Collection where Element: InsulinDose {
+    func effectsInterval() -> DateInterval? {
+        guard count > 0 else {
+            return nil
+        }
+        var minDate = first!.startDate
+        var maxDate = first!.endDate
+        for dose in self {
+            if dose.startDate < minDate {
+                minDate = dose.startDate
+            }
+
+            let doseEnd = dose.endDate.addingTimeInterval(dose.insulinModel.effectDuration)
+
+            if doseEnd > maxDate {
+                maxDate = doseEnd
+            }
+        }
+        return DateInterval(start: minDate, end: maxDate)
+    }
 }

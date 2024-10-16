@@ -183,9 +183,9 @@ final class LoopAlgorithmTests: XCTestCase {
             FixtureInsulinDose(deliveryType: .bolus, startDate: now, endDate: now.addingTimeInterval(20), volume: 1)
         ]
 
-        let isfStart = now.addingTimeInterval(.hours(-10))
+        let isfStart = now.addingTimeInterval(.hours(-24))
         let isfMid = now.addingTimeInterval(.hours(1.5))
-        let isfEnd = now.addingTimeInterval(InsulinMath.defaultInsulinActivityDuration).dateCeiledToTimeInterval(GlucoseMath.defaultDelta)
+        let isfEnd = now.addingTimeInterval(.hours(24))
 
         // ISF Changing mid-aborption
         input.sensitivity = [
@@ -195,7 +195,7 @@ final class LoopAlgorithmTests: XCTestCase {
 
         // With Mid-absorption ISF flag = false
         var output = LoopAlgorithm.run(input: input)
-        XCTAssertEqual(output.effects.insulin.last!.quantity.doubleValue(for: .milligramsPerDeciliter), -50)
+        XCTAssertEqual(output.effects.insulin.last!.quantity.doubleValue(for: .milligramsPerDeciliter), -50, accuracy: 0.5)
 
         // With Mid-absorption ISF flag = true
         input.useMidAbsorptionISF = true
@@ -302,7 +302,76 @@ final class LoopAlgorithmTests: XCTestCase {
         XCTAssertEqual(1.55, output.recommendation!.manual!.amount, accuracy: 0.01)
     }
 
-    func testShortISFTimelineDetected() {
+    func testIncompleteISFTimelineDetected() {
+        let now = ISO8601DateFormatter().date(from: "2020-03-11T12:13:14-0700")!
+        var input = AlgorithmInputFixture.mock(for: now)
+        input.recommendationType = .manualBolus
+
+        let basalStart = now.addingTimeInterval(.minutes(-5))
+        let basalEnd = now.addingTimeInterval(.minutes(30))
+        input.doses = [FixtureInsulinDose(
+            deliveryType: .basal,
+            startDate: basalStart,
+            endDate: basalEnd,
+            volume: 4  // 8U/hr
+        )]
+
+        input.glucoseHistory = [
+            FixtureGlucoseSample(startDate: now.addingTimeInterval(.minutes(-1)), quantity: .glucose(105)),
+        ]
+
+        // Sensitivity doesn't cover start of basal dose
+        input.sensitivity = [
+            AbsoluteScheduleValue(startDate: now, endDate: now.addingTimeInterval(InsulinMath.defaultInsulinActivityDuration).dateCeiledToTimeInterval(GlucoseMath.defaultDelta), value: .glucose(50)),
+        ]
+
+        var output = LoopAlgorithm.run(input: input)
+        guard case .failure(AlgorithmError.sensitivityTimelineStartsTooLate) = output.recommendationResult else {
+            XCTFail("Expected sensitivityTimelineStartsTooLate failure")
+            return
+        }
+
+        // Sensitivity does cover start of basal dose, but ends before temp basal effects end
+        input.sensitivity = [
+            AbsoluteScheduleValue(
+                startDate: basalStart.dateFlooredToTimeInterval(GlucoseMath.defaultDelta),
+                endDate: now.addingTimeInterval(InsulinMath.defaultInsulinActivityDuration).dateCeiledToTimeInterval(GlucoseMath.defaultDelta),
+                value: .glucose(50)
+            ),
+        ]
+        output = LoopAlgorithm.run(input: input)
+        guard case .failure(AlgorithmError.sensitivityTimelineEndsTooEarly) = output.recommendationResult else {
+            XCTFail("Expected sensitivityTimelineEndsTooEarly failure")
+            return
+        }
+
+
+        // Sensitivity covers all
+        let recommendationEffectInterval = DateInterval(
+            start: input.predictionStart,
+            duration: input.recommendationInsulinModel.effectDuration
+        )
+        let neededISFInterval = LoopAlgorithm.timelineIntervalForSensitivity(
+            doses: input.doses,
+            glucoseHistoryStart: input.glucoseHistory.first!.startDate,
+            recommendationEffectInterval: recommendationEffectInterval
+        )
+        input.sensitivity = [
+            AbsoluteScheduleValue(
+                startDate: neededISFInterval.start,
+                endDate:  neededISFInterval.end,
+                value: .glucose(50)
+            )
+        ]
+        output = LoopAlgorithm.run(input: input)
+        guard case .success = output.recommendationResult else {
+            XCTFail("Expected recommendationResult success")
+            return
+        }
+
+    }
+
+    func testIncompleteISFTimelineDetectedForMidAbsorptionISF() {
         let now = ISO8601DateFormatter().date(from: "2020-03-11T12:13:14-0700")!
         var input = AlgorithmInputFixture.mock(for: now)
         input.recommendationType = .manualBolus
@@ -315,15 +384,26 @@ final class LoopAlgorithmTests: XCTestCase {
             volume: 4  // 8U/hr
         )]
 
-        // Sensitivity doesn't cover forecast
-        input.sensitivity = [
-            AbsoluteScheduleValue(startDate: now, endDate: now.addingTimeInterval(.hours(1)), value: .glucose(50)),
+        input.glucoseHistory = [
+            FixtureGlucoseSample(startDate: now.addingTimeInterval(.minutes(-1)), quantity: .glucose(105)),
         ]
 
+
+        // Sensitivity doesn't cover forecast
+        input.sensitivity = [
+            AbsoluteScheduleValue(
+                startDate: basalStart.dateFlooredToTimeInterval(GlucoseMath.defaultDelta),
+                endDate: now.addingTimeInterval(InsulinMath.defaultInsulinActivityDuration).dateCeiledToTimeInterval(GlucoseMath.defaultDelta),
+                value: .glucose(50)
+            ),
+        ]
+
+        input.useMidAbsorptionISF = true
         let output = LoopAlgorithm.run(input: input)
-        guard case .failure(AlgorithmError.sensitivityTimelineIncomplete) = output.recommendationResult else {
-            XCTFail("Expected sensitivityTimelineIncomplete failure")
+        guard case .failure(AlgorithmError.sensitivityTimelineEndsTooEarly) = output.recommendationResult else {
+            XCTFail("Expected sensitivityTimelineEndsTooEarly failure")
             return
         }
     }
+
 }

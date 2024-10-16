@@ -16,7 +16,7 @@ class CorrectionDosingTests: XCTestCase {
         return PredictedGlucoseMocks.testDate
     }
 
-    let suspendThreshold: HKQuantity = .glucose(value: 55)
+    let suspendThreshold: HKQuantity = .glucose(55)
     let maxBasalRate = 3.0
 
     var target: GlucoseRangeTimeline!
@@ -25,8 +25,8 @@ class CorrectionDosingTests: XCTestCase {
     let insulinModel = ExponentialInsulinModelPreset.rapidActingAdult
 
     override func setUp() {
-        let lowerBound: HKQuantity = .glucose(value: 90)
-        let upperBound: HKQuantity = .glucose(value: 120)
+        let lowerBound: HKQuantity = .glucose(90)
+        let upperBound: HKQuantity = .glucose(120)
 
         target = [AbsoluteScheduleValue(
             startDate: testDate.addingTimeInterval(.hours(-24)),
@@ -79,7 +79,7 @@ class CorrectionDosingTests: XCTestCase {
         let manualDose = LoopAlgorithm.recommendManualBolus(
             for: correction,
             maxBolus: 6,
-            currentGlucose: FixtureGlucoseSample(startDate: PredictedGlucoseMocks.testDate, quantity: .glucose(value: 120)),
+            currentGlucose: FixtureGlucoseSample(startDate: PredictedGlucoseMocks.testDate, quantity: .glucose(120)),
             target: target
         )
 
@@ -123,7 +123,7 @@ class CorrectionDosingTests: XCTestCase {
         let manualDose = LoopAlgorithm.recommendManualBolus(
             for: correction,
             maxBolus: 6,
-            currentGlucose: FixtureGlucoseSample(startDate: PredictedGlucoseMocks.testDate, quantity: .glucose(value: 120)),
+            currentGlucose: FixtureGlucoseSample(startDate: PredictedGlucoseMocks.testDate, quantity: .glucose(120)),
             target: target
         )
 
@@ -168,7 +168,7 @@ class CorrectionDosingTests: XCTestCase {
         let manualDose = LoopAlgorithm.recommendManualBolus(
             for: correction,
             maxBolus: 6,
-            currentGlucose: FixtureGlucoseSample(startDate: PredictedGlucoseMocks.testDate, quantity: .glucose(value: 120)),
+            currentGlucose: FixtureGlucoseSample(startDate: PredictedGlucoseMocks.testDate, quantity: .glucose(120)),
             target: target
         )
 
@@ -213,7 +213,7 @@ class CorrectionDosingTests: XCTestCase {
         let manualDose = LoopAlgorithm.recommendManualBolus(
             for: correction,
             maxBolus: 6,
-            currentGlucose: FixtureGlucoseSample(startDate: PredictedGlucoseMocks.testDate, quantity: .glucose(value: 120)),
+            currentGlucose: FixtureGlucoseSample(startDate: PredictedGlucoseMocks.testDate, quantity: .glucose(120)),
             target: target
         )
 
@@ -259,7 +259,7 @@ class CorrectionDosingTests: XCTestCase {
         let manualDose = LoopAlgorithm.recommendManualBolus(
             for: correction,
             maxBolus: 6,
-            currentGlucose: FixtureGlucoseSample(startDate: PredictedGlucoseMocks.testDate, quantity: .glucose(value: 120)),
+            currentGlucose: FixtureGlucoseSample(startDate: PredictedGlucoseMocks.testDate, quantity: .glucose(120)),
             target: target
         )
 
@@ -308,7 +308,7 @@ class CorrectionDosingTests: XCTestCase {
         let manualDose = LoopAlgorithm.recommendManualBolus(
             for: correction,
             maxBolus: 6,
-            currentGlucose: FixtureGlucoseSample(startDate: PredictedGlucoseMocks.testDate, quantity: .glucose(value: 120)),
+            currentGlucose: FixtureGlucoseSample(startDate: PredictedGlucoseMocks.testDate, quantity: .glucose(120)),
             target: target
         )
 
@@ -357,7 +357,7 @@ class CorrectionDosingTests: XCTestCase {
         let manualDose = LoopAlgorithm.recommendManualBolus(
             for: correction,
             maxBolus: 6,
-            currentGlucose: FixtureGlucoseSample(startDate: PredictedGlucoseMocks.testDate, quantity: .glucose(value: 120)),
+            currentGlucose: FixtureGlucoseSample(startDate: PredictedGlucoseMocks.testDate, quantity: .glucose(120)),
             target: target
         )
 
@@ -403,7 +403,7 @@ class CorrectionDosingTests: XCTestCase {
         let manualDose = LoopAlgorithm.recommendManualBolus(
             for: correction,
             maxBolus: 6,
-            currentGlucose: FixtureGlucoseSample(startDate: PredictedGlucoseMocks.testDate, quantity: .glucose(value: 120)),
+            currentGlucose: FixtureGlucoseSample(startDate: PredictedGlucoseMocks.testDate, quantity: .glucose(120)),
             target: target
         )
 
@@ -448,7 +448,7 @@ class CorrectionDosingTests: XCTestCase {
         let manualDose = LoopAlgorithm.recommendManualBolus(
             for: correction,
             maxBolus: 6,
-            currentGlucose: FixtureGlucoseSample(startDate: PredictedGlucoseMocks.testDate, quantity: .glucose(value: 120)),
+            currentGlucose: FixtureGlucoseSample(startDate: PredictedGlucoseMocks.testDate, quantity: .glucose(120)),
             target: target
         )
 
@@ -493,7 +493,7 @@ class CorrectionDosingTests: XCTestCase {
         let manualDose = LoopAlgorithm.recommendManualBolus(
             for: correction,
             maxBolus: 6,
-            currentGlucose: FixtureGlucoseSample(startDate: PredictedGlucoseMocks.testDate, quantity: .glucose(value: 120)),
+            currentGlucose: FixtureGlucoseSample(startDate: PredictedGlucoseMocks.testDate, quantity: .glucose(120)),
             target: target
         )
 
@@ -538,7 +538,7 @@ class CorrectionDosingTests: XCTestCase {
         let manualDose = LoopAlgorithm.recommendManualBolus(
             for: correction,
             maxBolus: 6,
-            currentGlucose: FixtureGlucoseSample(startDate: PredictedGlucoseMocks.testDate, quantity: .glucose(value: 120)),
+            currentGlucose: FixtureGlucoseSample(startDate: PredictedGlucoseMocks.testDate, quantity: .glucose(120)),
             target: target
         )
 

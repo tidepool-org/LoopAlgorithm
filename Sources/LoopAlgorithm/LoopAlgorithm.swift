@@ -466,19 +466,18 @@ public struct LoopAlgorithm {
 
     public static func run<LoopAlgorithmInputType: AlgorithmInput>(input: LoopAlgorithmInputType) -> AlgorithmOutput<LoopAlgorithmInputType.CarbType> {
 
-        let prediction = generatePrediction(
-            start: input.predictionStart,
-            glucoseHistory: input.glucoseHistory,
-            doses: input.doses,
-            carbEntries: input.carbEntries,
-            basal: input.basal,
-            sensitivity: input.sensitivity,
-            carbRatio: input.carbRatio,
-            algorithmEffectsOptions: .all,
-            useIntegralRetrospectiveCorrection: input.useIntegralRetrospectiveCorrection,
-            includingPositiveVelocityAndRC: input.includePositiveVelocityAndRC,
-            useMidAbsorptionISF: input.useMidAbsorptionISF,
-            carbAbsorptionModel: input.carbAbsorptionModel.model
+        var prediction = LoopPrediction(
+            glucose: [],
+            effects: LoopAlgorithmEffects(
+                insulin: [],
+                carbs: [],
+                carbStatus: [CarbStatus<LoopAlgorithmInputType.CarbType>](),
+                retrospectiveCorrection: [],
+                momentum: [],
+                insulinCounteraction: [],
+                retrospectiveGlucoseDiscrepancies: []
+            ),
+            dosesRelativeToBasal: []
         )
 
         // Now validate/recommend
@@ -514,16 +513,35 @@ public struct LoopAlgorithm {
                 throw AlgorithmError.missingSuspendThreshold
             }
 
-            // TODO: This is to be removed when implementing mid-absorption ISF changes
-            // This sets a single ISF value for the duration of the dose.
-            let sensitivityEnd = max(forecastEnd, prediction.effects.insulin.last?.startDate ?? .distantPast)
-            let sensitivityAtPredictionStart = input.sensitivity.first { $0.startDate <= input.predictionStart && $0.endDate >= input.predictionStart }!
-            let sensitivityOverPrediction = AbsoluteScheduleValue(
-                startDate: sensitivityAtPredictionStart.startDate,
-                endDate: sensitivityEnd,
-                value: sensitivityAtPredictionStart.value
+            prediction = generatePrediction(
+                start: input.predictionStart,
+                glucoseHistory: input.glucoseHistory,
+                doses: input.doses,
+                carbEntries: input.carbEntries,
+                basal: input.basal,
+                sensitivity: input.sensitivity,
+                carbRatio: input.carbRatio,
+                algorithmEffectsOptions: .all,
+                useIntegralRetrospectiveCorrection: input.useIntegralRetrospectiveCorrection,
+                includingPositiveVelocityAndRC: input.includePositiveVelocityAndRC,
+                useMidAbsorptionISF: input.useMidAbsorptionISF,
+                carbAbsorptionModel: input.carbAbsorptionModel.model
             )
-            let sensitivityForDosing = [sensitivityOverPrediction]
+
+            let sensitivityForDosing: [AbsoluteScheduleValue<HKQuantity>]
+            if input.useMidAbsorptionISF {
+                sensitivityForDosing = input.sensitivity
+            } else {
+                // This sets a single ISF value for the duration of the dose.
+                let sensitivityEnd = max(forecastEnd, prediction.effects.insulin.last?.startDate ?? .distantPast)
+                let sensitivityAtPredictionStart = input.sensitivity.first { $0.startDate <= input.predictionStart && $0.endDate >= input.predictionStart }!
+                let sensitivityOverPrediction = AbsoluteScheduleValue(
+                    startDate: sensitivityAtPredictionStart.startDate,
+                    endDate: sensitivityEnd,
+                    value: sensitivityAtPredictionStart.value
+                )
+                sensitivityForDosing = [sensitivityOverPrediction]
+            }
 
             let correction = insulinCorrection(
                 prediction: prediction.glucose,

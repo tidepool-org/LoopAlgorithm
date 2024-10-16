@@ -26,11 +26,11 @@ final class IntegralRetrospectiveCorrectionTests: XCTestCase {
             return startDate.addingTimeInterval(interval)
         }
 
-        let startingGlucose = SimpleGlucoseValue(startDate: startDate, quantity: .glucose(value: 100))
+        let startingGlucose = SimpleGlucoseValue(startDate: startDate, quantity: .glucose(100))
 
         // +10 mg/dL over 30 minutes
         let retrospectiveGlucoseDiscrepanciesSummed = [
-            GlucoseChange(startDate: d(.minutes(-30)), endDate: startDate, quantity: .glucose(value: 10))
+            GlucoseChange(startDate: d(.minutes(-30)), endDate: startDate, quantity: .glucose(10))
         ]
 
         let irc = IntegralRetrospectiveCorrection(effectDuration: LoopMath.retrospectiveCorrectionEffectDuration)

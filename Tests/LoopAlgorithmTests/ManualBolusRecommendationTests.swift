@@ -51,7 +51,7 @@ final class ManualBolusRecommendationTests: XCTestCase {
 
     func testAllGlucoseBelowTargetCodable() throws {
         let startDate = dateFormatter.date(from: "2015-07-13T12:02:37")!
-        let recommendation = ManualBolusRecommendation(amount: 0, notice: .allGlucoseBelowTarget(minGlucose: .init(startDate: startDate, quantity: .glucose(value: 55))))
+        let recommendation = ManualBolusRecommendation(amount: 0, notice: .allGlucoseBelowTarget(minGlucose: .init(startDate: startDate, quantity: .glucose(55))))
         let encoded = try encoder.encode(recommendation)
         XCTAssertEqual(
             """
@@ -76,7 +76,7 @@ final class ManualBolusRecommendationTests: XCTestCase {
 
     func testCurrentGlucoseBelowTargetCodable() throws {
         let startDate = dateFormatter.date(from: "2015-07-13T12:02:37")!
-        let recommendation = ManualBolusRecommendation(amount: 0, notice: .currentGlucoseBelowTarget(glucose: .init(startDate: startDate, quantity: .glucose(value: 65))))
+        let recommendation = ManualBolusRecommendation(amount: 0, notice: .currentGlucoseBelowTarget(glucose: .init(startDate: startDate, quantity: .glucose(65))))
         let encoded = try encoder.encode(recommendation)
         XCTAssertEqual(
             """
@@ -101,7 +101,7 @@ final class ManualBolusRecommendationTests: XCTestCase {
 
     func testPredictedGlucoseBelowTargetCodable() throws {
         let startDate = dateFormatter.date(from: "2015-07-13T12:02:37")!
-        let recommendation = ManualBolusRecommendation(amount: 0, notice: .predictedGlucoseBelowTarget(minGlucose: .init(startDate: startDate, quantity: .glucose(value: 65))))
+        let recommendation = ManualBolusRecommendation(amount: 0, notice: .predictedGlucoseBelowTarget(minGlucose: .init(startDate: startDate, quantity: .glucose(65))))
         let encoded = try encoder.encode(recommendation)
         XCTAssertEqual(
             """
@@ -142,7 +142,7 @@ final class ManualBolusRecommendationTests: XCTestCase {
 
     func testGlucoseBelowSuspendThresholdCodable() throws {
         let startDate = dateFormatter.date(from: "2015-07-13T12:02:37")!
-        let recommendation = ManualBolusRecommendation(amount: 0, notice: .glucoseBelowSuspendThreshold(minGlucose: .init(startDate: startDate, quantity: .glucose(value: 55))))
+        let recommendation = ManualBolusRecommendation(amount: 0, notice: .glucoseBelowSuspendThreshold(minGlucose: .init(startDate: startDate, quantity: .glucose(55))))
         let encoded = try encoder.encode(recommendation)
         XCTAssertEqual(
             """

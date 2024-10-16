@@ -57,7 +57,7 @@ final class LoopAlgorithmTests: XCTestCase {
         let now = ISO8601DateFormatter().date(from: "2024-01-03T12:00:00+0000")!
         var input = AlgorithmInputFixture.mock(for: now)
         input.recommendationType = .manualBolus
-        input.carbEntries.append(FixtureCarbEntry(absorptionTime: .hours(6), startDate: now, quantity: .carbs(value: 50)))
+        input.carbEntries.append(FixtureCarbEntry(absorptionTime: .hours(6), startDate: now, quantity: .carbs(50)))
 
         let output = LoopAlgorithm.run(input: input)
 
@@ -74,14 +74,14 @@ final class LoopAlgorithmTests: XCTestCase {
         a.carbEntries.append(
             FixtureCarbEntry(
                 startDate: a.predictionStart.addingTimeInterval(-.minutes(30)),
-                quantity: .carbs(value: 10)
+                quantity: .carbs(10)
             )
         )
 
         b.carbEntries.append(
             FixtureCarbEntry(
                 startDate: b.predictionStart.addingTimeInterval(-.minutes(30)),
-                quantity: .carbs(value: 10)
+                quantity: .carbs(10)
             )
         )
 
@@ -121,16 +121,16 @@ final class LoopAlgorithmTests: XCTestCase {
         input.carbEntries.append(
             FixtureCarbEntry(
                 startDate: now.addingTimeInterval(-.minutes(30)),
-                quantity: .carbs(value: 20)
+                quantity: .carbs(20)
             )
         )
 
         // Rising BG from carb absorption
         input.glucoseHistory = [
-            FixtureGlucoseSample(startDate: now.addingTimeInterval(.minutes(-18)), quantity: .glucose(value: 105)),
-            FixtureGlucoseSample(startDate: now.addingTimeInterval(.minutes(-13)), quantity: .glucose(value: 115)),
-            FixtureGlucoseSample(startDate: now.addingTimeInterval(.minutes(-8)), quantity: .glucose(value: 120)),
-            FixtureGlucoseSample(startDate: now.addingTimeInterval(.minutes(-3)), quantity: .glucose(value: 145)),
+            FixtureGlucoseSample(startDate: now.addingTimeInterval(.minutes(-18)), quantity: .glucose(105)),
+            FixtureGlucoseSample(startDate: now.addingTimeInterval(.minutes(-13)), quantity: .glucose(115)),
+            FixtureGlucoseSample(startDate: now.addingTimeInterval(.minutes(-8)), quantity: .glucose(120)),
+            FixtureGlucoseSample(startDate: now.addingTimeInterval(.minutes(-3)), quantity: .glucose(145)),
         ]
 
         let output = LoopAlgorithm.run(input: input)
@@ -189,8 +189,8 @@ final class LoopAlgorithmTests: XCTestCase {
 
         // ISF Changing mid-aborption
         input.sensitivity = [
-            AbsoluteScheduleValue(startDate: isfStart, endDate: isfMid, value: .glucose(value: 50)),
-            AbsoluteScheduleValue(startDate: isfMid, endDate: isfEnd, value: .glucose(value: 100))
+            AbsoluteScheduleValue(startDate: isfStart, endDate: isfMid, value: .glucose(50)),
+            AbsoluteScheduleValue(startDate: isfMid, endDate: isfEnd, value: .glucose(100))
         ]
 
         // With Mid-absorption ISF flag = false
@@ -217,7 +217,7 @@ final class LoopAlgorithmTests: XCTestCase {
             volume: 8
         )]
         input.carbEntries = [
-            FixtureCarbEntry(startDate: now.addingTimeInterval(.minutes(-5)), quantity: .carbs(value: 100))
+            FixtureCarbEntry(startDate: now.addingTimeInterval(.minutes(-5)), quantity: .carbs(100))
         ]
 
         // Max activeInsulin = 2 x maxBolus = 16U
@@ -252,7 +252,7 @@ final class LoopAlgorithmTests: XCTestCase {
         )]
 
         input.carbEntries = [
-            FixtureCarbEntry(startDate: now.addingTimeInterval(.minutes(-5)), quantity: .carbs(value: 100))
+            FixtureCarbEntry(startDate: now.addingTimeInterval(.minutes(-5)), quantity: .carbs(100))
         ]
 
         // Max activeInsulin = 2 x maxBolus = 16U
@@ -272,4 +272,58 @@ final class LoopAlgorithmTests: XCTestCase {
         XCTAssertEqual(recommendedRate, 1.0, accuracy: 0.01)
     }
 
+    func testRecommendationWithMidAbsorptionISF() {
+        let now = ISO8601DateFormatter().date(from: "2020-03-11T12:13:14-0700")!
+
+        var input = AlgorithmInputFixture.mock(for: now)
+        input.recommendationType = .manualBolus
+
+        // Sensitivity doubles in one hour
+        let isfChangeTime = now.addingTimeInterval(.hours(1))
+        input.sensitivity = [
+            AbsoluteScheduleValue(startDate: now.addingTimeInterval(.hours(-48)), endDate: isfChangeTime, value: .glucose(50)),
+            AbsoluteScheduleValue(startDate: isfChangeTime, endDate: now.addingTimeInterval(.hours(48)), value: .glucose(100))
+        ]
+
+        // No insulin or carbs
+        input.doses = []
+        input.carbEntries = []
+
+        input.maxBolus = 8
+
+        // Without mid-absorption ISF
+        input.useMidAbsorptionISF = false
+        var output = LoopAlgorithm.run(input: input)
+        XCTAssertEqual(2.58, output.recommendation!.manual!.amount, accuracy: 0.01)
+
+        // With mid-absorption ISF
+        input.useMidAbsorptionISF = true
+        output = LoopAlgorithm.run(input: input)
+        XCTAssertEqual(1.55, output.recommendation!.manual!.amount, accuracy: 0.01)
+    }
+
+    func testShortISFTimelineDetected() {
+        let now = ISO8601DateFormatter().date(from: "2020-03-11T12:13:14-0700")!
+        var input = AlgorithmInputFixture.mock(for: now)
+        input.recommendationType = .manualBolus
+
+        let basalStart = now.addingTimeInterval(-.minutes(5))
+        input.doses = [FixtureInsulinDose(
+            deliveryType: .basal,
+            startDate: basalStart,
+            endDate: basalStart.addingTimeInterval(.minutes(30)),
+            volume: 4  // 8U/hr
+        )]
+
+        // Sensitivity doesn't cover forecast
+        input.sensitivity = [
+            AbsoluteScheduleValue(startDate: now, endDate: now.addingTimeInterval(.hours(1)), value: .glucose(50)),
+        ]
+
+        let output = LoopAlgorithm.run(input: input)
+        guard case .failure(AlgorithmError.sensitivityTimelineIncomplete) = output.recommendationResult else {
+            XCTFail("Expected sensitivityTimelineIncomplete failure")
+            return
+        }
+    }
 }

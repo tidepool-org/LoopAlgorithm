@@ -133,7 +133,7 @@ public struct LoopAlgorithm {
 
     /// Calculates the needed interval for insulin sensitivity to run the algorithm
     /// - Parameters:
-    ///   - doses: The active doses effecting the forecast
+    ///   - doses: The active doses affecting the forecast
     ///   - glucoseHistoryStart: The start date of glucose history
     ///   - recommendationEffectInterval:The interval covering effects of a recommended dose
     public static func timelineIntervalForSensitivity<DoseType: InsulinDose>(

@@ -23,15 +23,6 @@ final class LoopAlgorithmTests: XCTestCase {
         return (input: input, recommendation: recommendation)
     }
 
-    func testSuspend() throws {
-
-        let (input, recommendation) = loadScenario("suspend")
-
-        let output = LoopAlgorithm.run(input: input)
-
-        XCTAssertEqual(output.recommendation, recommendation)
-    }
-
     func loadPredictedGlucoseFixture(_ name: String) -> [PredictedGlucoseValue] {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
@@ -40,7 +31,16 @@ final class LoopAlgorithmTests: XCTestCase {
         return try! decoder.decode([PredictedGlucoseValue].self, from: try! Data(contentsOf: url))
     }
 
-    func testCarbsWithSensitivityChange() throws {
+    func testSuspendScenario() throws {
+
+        let (input, recommendation) = loadScenario("suspend")
+
+        let output = LoopAlgorithm.run(input: input)
+
+        XCTAssertEqual(output.recommendation, recommendation)
+    }
+
+    func testCarbsWithSensitivityChangeScenario() throws {
 
         // This test computes a dose with a future carb entry
         // Between the time of dose and the startTime of the carb
@@ -101,6 +101,7 @@ final class LoopAlgorithmTests: XCTestCase {
         XCTAssertEqual(outputA.effects.retrospectiveCorrection.last?.quantity.doubleValue(for: .milligramsPerDeciliter), 165)
         XCTAssertEqual(outputB.effects.retrospectiveCorrection.last?.quantity.doubleValue(for: .milligramsPerDeciliter), 165)
 
+        // These tests fail, because the momentum effect is *not* time independent yet.
         // Even though all the input data is the same (just shifted in time), momentum effect varies in relation to how offset
         // the glucose samples are from the simulation timeline (at exact 5 minute intervals from the top of the hour)
 //        XCTAssertEqual(outputA.effects.momentum.last?.quantity.doubleValue(for: .milligramsPerDeciliter), 0.0)
@@ -145,7 +146,7 @@ final class LoopAlgorithmTests: XCTestCase {
         XCTAssertEqual(basalAdjustment!.unitsPerHour, 5.83, accuracy: 0.01)
     }
 
-    func testLiveCapture() {
+    func testLiveCaptureScenario() {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
 
@@ -406,4 +407,53 @@ final class LoopAlgorithmTests: XCTestCase {
         }
     }
 
+    func testEnactingRecommendation() throws {
+        let date = ISO8601DateFormatter().date(from: "2024-01-03T12:00:00+0000")!
+        var input = AlgorithmInputFixture.mock(for: date)
+
+        let now = input.predictionStart
+
+        // Insulin was suspended for a while
+        input.doses = [
+            FixtureInsulinDose(
+                deliveryType: .basal,
+                startDate: now.addingTimeInterval(-.hours(2)),
+                endDate: now.addingTimeInterval(-.minutes(5)),
+                volume: 0)
+        ]
+
+        // Rising BG
+        input.glucoseHistory = [
+            FixtureGlucoseSample(startDate: now.addingTimeInterval(.minutes(-15)), quantity: .glucose(105)),
+            FixtureGlucoseSample(startDate: now.addingTimeInterval(.minutes(-10)), quantity: .glucose(110)),
+            FixtureGlucoseSample(startDate: now.addingTimeInterval(.minutes(-5)), quantity: .glucose(115)),
+            FixtureGlucoseSample(startDate: now.addingTimeInterval(.minutes(-0)), quantity: .glucose(120)),
+        ]
+
+        var output = LoopAlgorithm.run(input: input)
+
+        let basalAdjustment = output.recommendation!.automatic!.basalAdjustment
+        XCTAssertEqual(basalAdjustment!.unitsPerHour, 4.94, accuracy: 0.01)
+
+        input.doses.append(
+            FixtureInsulinDose(
+                deliveryType: .basal,
+                startDate: now,
+                endDate: now.addingTimeInterval(.minutes(30)),
+                volume: basalAdjustment!.unitsPerHour / 2 // 4.94 U/hr = 2.47 U delivery over 30m
+            )
+        )
+
+        // 30 seconds later
+        input.predictionStart = input.predictionStart.addingTimeInterval(30)
+
+        // Add more time to insulin sensitivity timeline to account for running temp basal
+        input.sensitivity[0].endDate = input.sensitivity[0].endDate.addingTimeInterval(.hours(1))
+
+        // Manual recommendation does not cut off doses in progress, like a running temp basal
+        input.recommendationType = .manualBolus
+
+        output = LoopAlgorithm.run(input: input)
+        XCTAssertEqual(output.predictedGlucose.last!.quantity.doubleValue(for: .milligramsPerDeciliter), 105, accuracy: 0.5)
+    }
 }

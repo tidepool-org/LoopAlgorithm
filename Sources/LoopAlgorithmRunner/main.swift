@@ -31,7 +31,8 @@ func main() {
         let output = LoopAlgorithm.run(input: input)
 
         let encoder = JSONEncoder()
-        encoder.outputFormatting = .prettyPrinted
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        encoder.dateEncodingStrategy = .iso8601
         let jsonData = try encoder.encode(output)
 
         if let jsonString = String(data: jsonData, encoding: .utf8) {

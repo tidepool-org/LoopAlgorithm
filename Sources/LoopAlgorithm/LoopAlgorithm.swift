@@ -207,11 +207,11 @@ public struct LoopAlgorithm {
 
             // Extend range of insulin effects to cover glucose, if needed
             if let glucoseStart = glucoseHistory.first?.startDate, glucoseStart < insulinEffectsInterval.start {
-                insulinEffectsInterval.start = glucoseStart
+                insulinEffectsInterval = insulinEffectsInterval.extendedToInclude(glucoseStart)
             }
 
             if let glucoseEnd = glucoseHistory.last?.endDate, glucoseEnd > insulinEffectsInterval.end {
-                insulinEffectsInterval.end = glucoseEnd
+                insulinEffectsInterval = insulinEffectsInterval.extendedToInclude(glucoseEnd)
             }
 
             if useMidAbsorptionISF {

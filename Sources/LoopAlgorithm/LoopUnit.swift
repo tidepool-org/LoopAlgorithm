@@ -15,11 +15,11 @@ public enum LoopUnit: Sendable, CaseIterable {
     case milligramsPerDeciliterPerMinute
     case percent
     
-    init(from string: String) {
+    public init(from string: String) {
         self = LoopUnit.allCases.first(where: { $0.unitString == string }) ?? .gram
     }
     
-    func conversionFactor(from unit: LoopUnit) -> Double? {
+    public func conversionFactor(from unit: LoopUnit) -> Double? {
         switch (self, unit) {
         case (.gram, .gram),
              (.internationalUnit, .internationalUnit),
@@ -42,7 +42,7 @@ public enum LoopUnit: Sendable, CaseIterable {
         }
     }
     
-    var unitString: String {
+    public var unitString: String {
         switch self {
         case .gram:
             return "g"

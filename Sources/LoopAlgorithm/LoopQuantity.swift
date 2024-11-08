@@ -12,7 +12,7 @@ public struct LoopQuantity: Hashable, Equatable, Comparable, Sendable {
     public let unit: LoopUnit
     public let value: Double
     
-    init(unit: LoopUnit, doubleValue value: Double) {
+    public init(unit: LoopUnit, doubleValue value: Double) {
         self.unit = unit
         self.value = value
     }

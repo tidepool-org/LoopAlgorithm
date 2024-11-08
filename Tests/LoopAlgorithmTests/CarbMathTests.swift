@@ -7,7 +7,6 @@
 //
 
 import XCTest
-import HealthKit
 @testable import LoopAlgorithm
 
 public typealias JSONDictionary = [String: Any]

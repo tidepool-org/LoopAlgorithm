@@ -5,23 +5,23 @@
 //  Copyright © 2018 LoopKit Authors. All rights reserved.
 //
 
-import HealthKit
+import Foundation
 
 public struct FixtureGlucoseSample: GlucoseSampleValue, Equatable {
     public static let defaultProvenanceIdentifier = "com.LoopKit.Loop"
 
     public let provenanceIdentifier: String
     public let startDate: Date
-    public let quantity: HKQuantity
+    public let quantity: LoopQuantity
     public let isDisplayOnly: Bool
     public let wasUserEntered: Bool
     public var condition: GlucoseCondition?
-    public var trendRate: HKQuantity?
+    public var trendRate: LoopQuantity?
 
     public init(
         provenanceIdentifier: String = Self.defaultProvenanceIdentifier,
         startDate: Date,
-        quantity: HKQuantity,
+        quantity: LoopQuantity,
         isDisplayOnly: Bool = false,
         wasUserEntered: Bool = false
     ) {
@@ -43,7 +43,7 @@ extension FixtureGlucoseSample: Codable {
 
         self.init(provenanceIdentifier: provenanceIdentifier,
                   startDate: try container.decode(Date.self, forKey: .date),
-                  quantity: HKQuantity(unit: .milligramsPerDeciliter, doubleValue: try container.decode(Double.self, forKey: .value)),
+                  quantity: LoopQuantity(unit: .milligramsPerDeciliter, doubleValue: try container.decode(Double.self, forKey: .value)),
                   isDisplayOnly: isDisplayOnly,
                   wasUserEntered: wasUserEntered
         )

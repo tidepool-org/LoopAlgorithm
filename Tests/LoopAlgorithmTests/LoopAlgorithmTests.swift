@@ -137,7 +137,7 @@ final class LoopAlgorithmTests: XCTestCase {
         let output = LoopAlgorithm.run(input: input)
 
         let carbStatus = output.effects.carbStatus.first!
-        XCTAssertEqual(carbStatus.absorption!.observedProgress.doubleValue(for: .percent()), 0.36, accuracy: 0.01)
+        XCTAssertEqual(carbStatus.absorption!.observedProgress.doubleValue(for: .percent), 0.36, accuracy: 0.01)
 
         XCTAssert(carbStatus.absorption!.isActive)
 

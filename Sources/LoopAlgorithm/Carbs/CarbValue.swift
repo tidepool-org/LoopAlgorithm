@@ -5,7 +5,6 @@
 //
 
 import Foundation
-import HealthKit
 
 
 public struct CarbValue: SampleValue {
@@ -13,8 +12,8 @@ public struct CarbValue: SampleValue {
     public let endDate: Date
     public var value: Double
 
-    public var quantity: HKQuantity {
-        return HKQuantity(unit: .gram(), doubleValue: value)
+    public var quantity: LoopQuantity {
+        return LoopQuantity(unit: .gram, doubleValue: value)
     }
 
     public init(startDate: Date, endDate: Date? = nil, value: Double) {

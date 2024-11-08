@@ -6,7 +6,6 @@
 //
 
 import XCTest
-import HealthKit
 @testable import LoopAlgorithm
 
 class PredictedGlucoseMocks {

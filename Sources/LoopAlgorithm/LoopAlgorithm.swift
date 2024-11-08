@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import HealthKit
 
 public enum AlgorithmError: Error {
     case missingGlucose
@@ -26,7 +25,7 @@ public struct LoopAlgorithmEffects<CarbStatusType: CarbEntry> {
     public var momentum: [GlucoseEffect]
     public var insulinCounteraction: [GlucoseEffectVelocity]
     public var retrospectiveGlucoseDiscrepancies: [GlucoseChange]
-    public var totalRetrospectiveCorrectionEffect: HKQuantity?
+    public var totalRetrospectiveCorrectionEffect: LoopQuantity?
 
     public init(
         insulin: [GlucoseEffect],
@@ -36,7 +35,7 @@ public struct LoopAlgorithmEffects<CarbStatusType: CarbEntry> {
         momentum: [GlucoseEffect],
         insulinCounteraction: [GlucoseEffectVelocity],
         retrospectiveGlucoseDiscrepancies: [GlucoseChange],
-        totalRetrospectiveCorrectionEffect: HKQuantity? = nil
+        totalRetrospectiveCorrectionEffect: LoopQuantity? = nil
     ) {
         self.insulin = insulin
         self.carbs = carbs
@@ -61,7 +60,7 @@ extension LoopAlgorithmEffects<FixtureCarbEntry>: Codable {
         self.retrospectiveGlucoseDiscrepancies = try container.decode([GlucoseChange].self, forKey: .retrospectiveGlucoseDiscrepancies)
 
         if let totalRetrospectiveCorrectionEffectValue = try container.decodeIfPresent(Double.self, forKey: .totalRetrospectiveCorrectionEffect) {
-            self.totalRetrospectiveCorrectionEffect = HKQuantity(
+            self.totalRetrospectiveCorrectionEffect = LoopQuantity(
                 unit: .milligramsPerDeciliter,
                 doubleValue: totalRetrospectiveCorrectionEffectValue
             )
@@ -98,7 +97,7 @@ extension LoopAlgorithmEffects<FixtureCarbEntry>: Codable {
 }
 
 
-public struct AlgorithmEffectsOptions: OptionSet {
+public struct AlgorithmEffectsOptions: OptionSet, Sendable {
     public let rawValue: UInt8
 
     public static let carbs            = AlgorithmEffectsOptions(rawValue: 1 << 0)
@@ -173,7 +172,7 @@ public struct LoopAlgorithm {
         doses: [InsulinDoseType],
         carbEntries: [CarbType],
         basal: [AbsoluteScheduleValue<Double>],
-        sensitivity: [AbsoluteScheduleValue<HKQuantity>],
+        sensitivity: [AbsoluteScheduleValue<LoopQuantity>],
         carbRatio: [AbsoluteScheduleValue<Double>],
         algorithmEffectsOptions: AlgorithmEffectsOptions = .all,
         useIntegralRetrospectiveCorrection: Bool = false,
@@ -189,7 +188,7 @@ public struct LoopAlgorithm {
         var momentumEffects: [GlucoseEffect] = []
         var insulinCounteractionEffects: [GlucoseEffectVelocity] = []
         var retrospectiveGlucoseDiscrepanciesSummed: [GlucoseChange] = []
-        var totalRetrospectiveCorrectionEffect: HKQuantity?
+        var totalRetrospectiveCorrectionEffect: LoopQuantity?
         var activeInsulin: Double?
         var activeCarbs: Double?
         //var carbStatus: [CarbStatus] = []
@@ -357,8 +356,8 @@ public struct LoopAlgorithm {
         prediction: [PredictedGlucoseValue],
         at deliveryDate: Date,
         target: GlucoseRangeTimeline,
-        suspendThreshold: HKQuantity,
-        sensitivity: [AbsoluteScheduleValue<HKQuantity>],
+        suspendThreshold: LoopQuantity,
+        sensitivity: [AbsoluteScheduleValue<LoopQuantity>],
         insulinModel: InsulinModel
     ) -> InsulinCorrection {
         return prediction.insulinCorrection(
@@ -537,7 +536,7 @@ public struct LoopAlgorithm {
                 carbAbsorptionModel: input.carbAbsorptionModel.model
             )
 
-            let sensitivityForDosing: [AbsoluteScheduleValue<HKQuantity>]
+            let sensitivityForDosing: [AbsoluteScheduleValue<LoopQuantity>]
             if input.useMidAbsorptionISF {
                 sensitivityForDosing = input.sensitivity
             } else {

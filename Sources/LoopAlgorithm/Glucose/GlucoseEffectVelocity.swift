@@ -5,16 +5,15 @@
 //
 
 import Foundation
-import HealthKit
 
 
 /// The first-derivative of GlucoseEffect, blood glucose over time.
 public struct GlucoseEffectVelocity: SampleValue {
     public let startDate: Date
     public let endDate: Date
-    public let quantity: HKQuantity
+    public let quantity: LoopQuantity
 
-    public init(startDate: Date, endDate: Date, quantity: HKQuantity) {
+    public init(startDate: Date, endDate: Date, quantity: LoopQuantity) {
         self.startDate = startDate
         self.endDate = endDate
         self.quantity = quantity
@@ -23,7 +22,7 @@ public struct GlucoseEffectVelocity: SampleValue {
 
 
 extension GlucoseEffectVelocity {
-    public static let perSecondUnit = HKUnit.milligramsPerDeciliter.unitDivided(by: .second())
+    public static let perSecondUnit = LoopUnit.milligramsPerDeciliterPerSecond
 
     /// The integration of the velocity span
     public var effect: GlucoseEffect {
@@ -32,7 +31,7 @@ extension GlucoseEffectVelocity {
 
         return GlucoseEffect(
             startDate: endDate,
-            quantity: HKQuantity(
+            quantity: LoopQuantity(
                 unit: .milligramsPerDeciliter,
                 doubleValue: velocityPerSecond * duration
             )
@@ -45,7 +44,7 @@ extension GlucoseEffectVelocity: Codable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         self.startDate = try container.decode(Date.self, forKey: .startDate)
         self.endDate = try container.decode(Date.self, forKey: .endDate)
-        self.quantity = HKQuantity(
+        self.quantity = LoopQuantity(
             unit: GlucoseEffectVelocity.perSecondUnit,
             doubleValue: try container.decode(Double.self, forKey: .mgdlPerSecond)
         )

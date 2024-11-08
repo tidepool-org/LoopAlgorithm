@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import HealthKit
 
 
 public struct CarbStatus<T: CarbEntry> {
@@ -23,7 +22,7 @@ public struct CarbStatus<T: CarbEntry> {
 
 // Masquerade as a carb entry, substituting AbsorbedCarbValue's interpretation of absorption time
 extension CarbStatus: SampleValue {
-    public var quantity: HKQuantity {
+    public var quantity: LoopQuantity {
         return entry.quantity
     }
 
@@ -50,7 +49,7 @@ extension CarbStatus {
             return entry.carbsOnBoard(at: date, defaultAbsorptionTime: defaultAbsorptionTime, delay: delay, absorptionModel: absorptionModel)
         }
 
-        let unit = HKUnit.gram()
+        let unit = LoopUnit.gram
 
         guard let observedTimeline = observedTimeline, let observationEnd = observedTimeline.last?.endDate else {
             // Less than minimum observed or observation not yet started; calc based on modeled absorption rate
@@ -86,7 +85,7 @@ extension CarbStatus {
             return entry.absorbedCarbs(at: date, absorptionTime: absorptionTime, delay: delay, absorptionModel: absorptionModel)
         }
 
-        let unit = HKUnit.gram()
+        let unit = LoopUnit.gram
 
         guard let observedTimeline = observedTimeline, let observationEnd = observedTimeline.last?.endDate else {
             // Less than minimum observed or observation not yet started; calc based on modeled absorption rate

@@ -5,7 +5,6 @@
 //
 
 import Foundation
-import HealthKit
 
 
 public protocol InsulinDose: TimelineValue {

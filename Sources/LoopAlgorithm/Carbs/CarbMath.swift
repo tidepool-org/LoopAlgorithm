@@ -7,7 +7,6 @@
 //
 
 import Foundation
-import HealthKit
 
 public struct CarbMath {
     public static let maximumAbsorptionTimeInterval: TimeInterval = .hours(10)
@@ -208,7 +207,7 @@ extension CarbEntry {
         let value: Double
 
         if time >= 0 {
-            value = absorptionModel.unabsorbedCarbs(of: quantity.doubleValue(for: HKUnit.gram()), atTime: time - delay, absorptionTime: absorptionTime ?? defaultAbsorptionTime)
+            value = absorptionModel.unabsorbedCarbs(of: quantity.doubleValue(for: LoopUnit.gram), atTime: time - delay, absorptionTime: absorptionTime ?? defaultAbsorptionTime)
         } else {
             value = 0
         }
@@ -226,7 +225,7 @@ extension CarbEntry {
         let time = date.timeIntervalSince(startDate)
 
         return absorptionModel.absorbedCarbs(
-            of: quantity.doubleValue(for: .gram()),
+            of: quantity.doubleValue(for: .gram),
             atTime: time - delay,
             absorptionTime: absorptionTime
         )
@@ -235,13 +234,13 @@ extension CarbEntry {
     // mg/dL / g * g
     fileprivate func glucoseEffect(
         at date: Date,
-        carbRatio: HKQuantity,
-        insulinSensitivity: HKQuantity,
+        carbRatio: LoopQuantity,
+        insulinSensitivity: LoopQuantity,
         defaultAbsorptionTime: TimeInterval,
         delay: TimeInterval,
         absorptionModel: CarbAbsorptionComputable
     ) -> Double {
-        return insulinSensitivity.doubleValue(for: HKUnit.milligramsPerDeciliter) / carbRatio.doubleValue(for: .gram()) * absorbedCarbs(at: date, absorptionTime: absorptionTime ?? defaultAbsorptionTime, delay: delay, absorptionModel: absorptionModel)
+        return insulinSensitivity.doubleValue(for: LoopUnit.milligramsPerDeciliter) / carbRatio.doubleValue(for: .gram) * absorbedCarbs(at: date, absorptionTime: absorptionTime ?? defaultAbsorptionTime, delay: delay, absorptionModel: absorptionModel)
     }
 }
 
@@ -365,7 +364,7 @@ extension Collection {
         from start: Date? = nil,
         to end: Date? = nil,
         carbRatios: [AbsoluteScheduleValue<Double>],
-        insulinSensitivities: [AbsoluteScheduleValue<HKQuantity>],
+        insulinSensitivities: [AbsoluteScheduleValue<LoopQuantity>],
         defaultAbsorptionTime: TimeInterval = CarbMath.defaultAbsorptionTime,
         absorptionModel: CarbAbsorptionComputable = PiecewiseLinearAbsorption(),
         delay: TimeInterval = CarbMath.defaultEffectDelay,
@@ -377,7 +376,7 @@ extension Collection {
 
         var date = startDate
         var values = [GlucoseEffect]()
-        let mgdL = HKUnit.milligramsPerDeciliter
+        let mgdL = LoopUnit.milligramsPerDeciliter
 
         repeat {
             let value = reduce(0.0) { (value, entry) -> Double in
@@ -395,7 +394,7 @@ extension Collection {
                 )
             }
 
-            values.append(GlucoseEffect(startDate: date, quantity: HKQuantity(unit: mgdL, doubleValue: value)))
+            values.append(GlucoseEffect(startDate: date, quantity: LoopQuantity(unit: mgdL, doubleValue: value)))
             date = date.addingTimeInterval(delta)
         } while date <= endDate
 
@@ -408,7 +407,7 @@ extension Collection {
             return nil
         }
 
-        let gram = HKUnit.gram()
+        let gram = LoopUnit.gram
         var maxObservedEndDate = firstAbsorption.observedDate.end
         var remainingTotalGrams: Double = 0
 
@@ -452,7 +451,7 @@ fileprivate class CarbStatusBuilder<T: CarbEntry> {
     let entry: T
 
     /// The unit used for carb values
-    let carbUnit: HKUnit
+    let carbUnit: LoopUnit
 
     /// The total grams entered for this entry
     let entryGrams: Double
@@ -587,7 +586,7 @@ fileprivate class CarbStatusBuilder<T: CarbEntry> {
     ///   - absorptionModel: The absorption model to use when computing remaining absorption
     ///   - adaptiveAbsorptionRateEnabled: Whether the remaining absorption rate changes based in observed absorption rate
     ///   - adaptiveRateStandbyIntervalFraction: The delay, specified as a fraction of total absorption time, before the absorption rate will change based on observed absorption rate. Only used if adaptiveAbsorptionRateEnabled is true.
-    init(entry: T, carbUnit: HKUnit, carbohydrateSensitivityFactor: Double, initialAbsorptionTime: TimeInterval, maxAbsorptionTime: TimeInterval, delay: TimeInterval, lastEffectDate: Date?, absorptionModel: CarbAbsorptionComputable, adaptiveAbsorptionRateEnabled: Bool, adaptiveRateStandbyIntervalFraction: Double, initialObservedEffect: Double = 0) {
+    init(entry: T, carbUnit: LoopUnit, carbohydrateSensitivityFactor: Double, initialAbsorptionTime: TimeInterval, maxAbsorptionTime: TimeInterval, delay: TimeInterval, lastEffectDate: Date?, absorptionModel: CarbAbsorptionComputable, adaptiveAbsorptionRateEnabled: Bool, adaptiveRateStandbyIntervalFraction: Double, initialObservedEffect: Double = 0) {
         self.entry = entry
         self.carbUnit = carbUnit
         self.carbohydrateSensitivityFactor = carbohydrateSensitivityFactor
@@ -643,10 +642,10 @@ fileprivate class CarbStatusBuilder<T: CarbEntry> {
     /// The resulting CarbStatus value
     var result: CarbStatus<T> {
         let absorption = AbsorbedCarbValue(
-            observed: HKQuantity(unit: carbUnit, doubleValue: observedGrams),
-            clamped: HKQuantity(unit: carbUnit, doubleValue: clampedGrams),
+            observed: LoopQuantity(unit: carbUnit, doubleValue: observedGrams),
+            clamped: LoopQuantity(unit: carbUnit, doubleValue: clampedGrams),
             total: entry.quantity,
-            remaining: HKQuantity(unit: carbUnit, doubleValue: entryGrams - clampedGrams),
+            remaining: LoopQuantity(unit: carbUnit, doubleValue: entryGrams - clampedGrams),
             observedDate: observedAbsorptionDates,
             estimatedTimeRemaining: estimatedTimeRemaining,
             timeToAbsorbObservedCarbs: timeToAbsorbObservedCarbs
@@ -692,7 +691,7 @@ extension Collection where Element: CarbEntry {
     public func map(
         to effectVelocities: [GlucoseEffectVelocity],
         carbRatio: [AbsoluteScheduleValue<Double>],
-        insulinSensitivity: [AbsoluteScheduleValue<HKQuantity>],
+        insulinSensitivity: [AbsoluteScheduleValue<LoopQuantity>],
         absorptionTimeOverrun: Double = CarbMath.defaultAbsorptionTimeOverrun,
         defaultAbsorptionTime: TimeInterval = CarbMath.defaultAbsorptionTime,
         delay: TimeInterval = CarbMath.defaultEffectDelay,
@@ -707,8 +706,8 @@ extension Collection where Element: CarbEntry {
         }
 
         // for computation
-        let glucoseUnit = HKUnit.milligramsPerDeciliter
-        let carbUnit = HKUnit.gram()
+        let glucoseUnit = LoopUnit.milligramsPerDeciliter
+        let carbUnit = LoopUnit.gram
 
         let builders: [CarbStatusBuilder<Element>] = map { (entry) in
             guard

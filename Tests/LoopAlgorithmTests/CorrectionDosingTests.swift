@@ -7,7 +7,6 @@
 //
 
 import XCTest
-import HealthKit
 @testable import LoopAlgorithm
 
 class CorrectionDosingTests: XCTestCase {
@@ -16,17 +15,17 @@ class CorrectionDosingTests: XCTestCase {
         return PredictedGlucoseMocks.testDate
     }
 
-    let suspendThreshold: HKQuantity = .glucose(55)
+    let suspendThreshold: LoopQuantity = .glucose(55)
     let maxBasalRate = 3.0
 
     var target: GlucoseRangeTimeline!
-    var sensitivity: [AbsoluteScheduleValue<HKQuantity>]!
+    var sensitivity: [AbsoluteScheduleValue<LoopQuantity>]!
     let basalRate = 1.0
     let insulinModel = ExponentialInsulinModelPreset.rapidActingAdult
 
     override func setUp() {
-        let lowerBound: HKQuantity = .glucose(90)
-        let upperBound: HKQuantity = .glucose(120)
+        let lowerBound: LoopQuantity = .glucose(90)
+        let upperBound: LoopQuantity = .glucose(120)
 
         target = [AbsoluteScheduleValue(
             startDate: testDate.addingTimeInterval(.hours(-24)),
@@ -37,7 +36,7 @@ class CorrectionDosingTests: XCTestCase {
         sensitivity = [AbsoluteScheduleValue(
             startDate: testDate.addingTimeInterval(.hours(-24)),
             endDate: testDate.addingTimeInterval(.hours(24)),
-            value: HKQuantity(unit: .milligramsPerDeciliter, doubleValue: 60)
+            value: LoopQuantity(unit: .milligramsPerDeciliter, doubleValue: 60)
         )]
     }
 

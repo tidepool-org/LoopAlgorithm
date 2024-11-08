@@ -5,15 +5,15 @@
 //  Copyright © 2018 LoopKit Authors. All rights reserved.
 //
 
-import HealthKit
+import Foundation
 
 
 public struct GlucoseChange: SampleValue, Equatable {
     public var startDate: Date
     public var endDate: Date
-    public var quantity: HKQuantity
+    public var quantity: LoopQuantity
 
-    public init(startDate: Date, endDate: Date, quantity: HKQuantity) {
+    public init(startDate: Date, endDate: Date, quantity: LoopQuantity) {
         self.startDate = startDate
         self.endDate = endDate
         self.quantity = quantity
@@ -25,7 +25,7 @@ extension GlucoseChange {
     mutating public func append(_ effect: GlucoseEffect) {
         startDate = min(effect.startDate, startDate)
         endDate = max(effect.endDate, endDate)
-        quantity = HKQuantity(
+        quantity = LoopQuantity(
             unit: .milligramsPerDeciliter,
             doubleValue: quantity.doubleValue(for: .milligramsPerDeciliter) + effect.quantity.doubleValue(for: .milligramsPerDeciliter)
         )
@@ -37,7 +37,7 @@ extension GlucoseChange: Codable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         self.startDate = try container.decode(Date.self, forKey: .startDate)
         self.endDate = try container.decode(Date.self, forKey: .endDate)
-        self.quantity = HKQuantity(
+        self.quantity = LoopQuantity(
             unit: .milligramsPerDeciliter,
             doubleValue: try container.decode(Double.self, forKey: .mgdl)
         )

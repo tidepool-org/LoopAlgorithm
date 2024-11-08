@@ -7,7 +7,6 @@
 //
 
 import Foundation
-import HealthKit
 
 /**
     Integral Retrospective Correction (IRC) calculates a correction effect in glucose prediction based on a timeline of past discrepancies between observed glucose movement and movement expected based on insulin and carb models. Integral retrospective correction acts as a proportional-integral-differential (PID) controller aimed at reducing modeling errors in glucose prediction.
@@ -22,7 +21,7 @@ public class IntegralRetrospectiveCorrection: RetrospectiveCorrection {
     /// Standard effect duration
     let effectDuration: TimeInterval
     /// Overall retrospective correction effect
-    public var totalGlucoseCorrectionEffect: HKQuantity?
+    public var totalGlucoseCorrectionEffect: LoopQuantity?
     
     /**
      Integral retrospective correction parameters:
@@ -48,7 +47,7 @@ public class IntegralRetrospectiveCorrection: RetrospectiveCorrection {
     static let proportionalGain: Double = currentDiscrepancyGain - integralGain
     
     /// All math is performed with glucose expressed in mg/dL
-    private let unit = HKUnit.milligramsPerDeciliter
+    private let unit = LoopUnit.milligramsPerDeciliter
     
     /// State variables reported in diagnostic issue report
     var recentDiscrepancyValues: [Double] = []
@@ -96,7 +95,7 @@ public class IntegralRetrospectiveCorrection: RetrospectiveCorrection {
         // Default values if we are not able to calculate integral retrospective correction
         let currentDiscrepancyValue = currentDiscrepancy.quantity.doubleValue(for: unit)
         var scaledCorrection = currentDiscrepancyValue
-        totalGlucoseCorrectionEffect = HKQuantity(unit: unit, doubleValue: currentDiscrepancyValue)
+        totalGlucoseCorrectionEffect = LoopQuantity(unit: unit, doubleValue: currentDiscrepancyValue)
         integralCorrectionEffectDuration = effectDuration
         
         // Calculate integral retrospective correction if past discrepancies over integration interval are available and if user settings are available
@@ -150,7 +149,7 @@ public class IntegralRetrospectiveCorrection: RetrospectiveCorrection {
             }
 
             let totalCorrection = proportionalCorrection + integralCorrection + differentialCorrection
-            totalGlucoseCorrectionEffect = HKQuantity(unit: unit, doubleValue: totalCorrection)
+            totalGlucoseCorrectionEffect = LoopQuantity(unit: unit, doubleValue: totalCorrection)
             integralCorrectionEffectDuration = TimeInterval(minutes: integralCorrectionEffectMinutes)
             
             // correction value scaled to account for extended effect duration
@@ -159,7 +158,7 @@ public class IntegralRetrospectiveCorrection: RetrospectiveCorrection {
         
         let retrospectionTimeInterval = currentDiscrepancy.endDate.timeIntervalSince(currentDiscrepancy.startDate)
         let discrepancyTime = max(retrospectionTimeInterval, retrospectiveCorrectionGroupingInterval)
-        let velocity = HKQuantity(unit: unit.unitDivided(by: .second()), doubleValue: scaledCorrection / discrepancyTime)
+            let velocity = LoopQuantity(unit: .milligramsPerDeciliterPerSecond, doubleValue: scaledCorrection / discrepancyTime)
         
         // Update array of glucose correction effects
         glucoseCorrectionEffect = startingGlucose.decayEffect(atRate: velocity, for: integralCorrectionEffectDuration!)

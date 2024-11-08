@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import HealthKit
 
 public struct AlgorithmOutput<CarbEntryType: CarbEntry> {
     public var recommendationResult: Result<LoopAlgorithmDoseRecommendation,Error>

@@ -7,7 +7,6 @@
 //
 
 import Foundation
-import HealthKit
 
 public struct LoopPredictionInput<CarbType: CarbEntry, GlucoseType: GlucoseSampleValue, InsulinDoseType: InsulinDose> {
     // Algorithm input time range: t-10h to t
@@ -23,7 +22,7 @@ public struct LoopPredictionInput<CarbType: CarbEntry, GlucoseType: GlucoseSampl
     public var basal: [AbsoluteScheduleValue<Double>]
 
     // Expected time range coverage: t-16h to t (eventually with mid-absorption isf changes, it will be t-10h to t)
-    public var sensitivity: [AbsoluteScheduleValue<HKQuantity>]
+    public var sensitivity: [AbsoluteScheduleValue<LoopQuantity>]
 
     // Expected time range coverage: t-10h to t+6h
     public var carbRatio: [AbsoluteScheduleValue<Double>]
@@ -41,7 +40,7 @@ public struct LoopPredictionInput<CarbType: CarbEntry, GlucoseType: GlucoseSampl
         doses: [InsulinDoseType],
         carbEntries: [CarbType],
         basal: [AbsoluteScheduleValue<Double>],
-        sensitivity: [AbsoluteScheduleValue<HKQuantity>],
+        sensitivity: [AbsoluteScheduleValue<LoopQuantity>],
         carbRatio: [AbsoluteScheduleValue<Double>],
         algorithmEffectsOptions: AlgorithmEffectsOptions,
         useIntegralRetrospectiveCorrection: Bool,
@@ -70,7 +69,7 @@ extension LoopPredictionInput: Codable where CarbType == FixtureCarbEntry, Gluco
         self.carbEntries = try container.decode([FixtureCarbEntry].self, forKey: .carbEntries)
         self.basal = try container.decode([AbsoluteScheduleValue<Double>].self, forKey: .basal)
         let sensitivityMgdl = try container.decode([AbsoluteScheduleValue<Double>].self, forKey: .sensitivity)
-        self.sensitivity = sensitivityMgdl.map { AbsoluteScheduleValue(startDate: $0.startDate, endDate: $0.endDate, value: HKQuantity(unit: .milligramsPerDeciliter, doubleValue: $0.value))}
+        self.sensitivity = sensitivityMgdl.map { AbsoluteScheduleValue(startDate: $0.startDate, endDate: $0.endDate, value: LoopQuantity(unit: .milligramsPerDeciliter, doubleValue: $0.value))}
         self.carbRatio = try container.decode([AbsoluteScheduleValue<Double>].self, forKey: .carbRatio)
         if let algorithmEffectsOptionsRaw = try container.decodeIfPresent(AlgorithmEffectsOptions.RawValue.self, forKey: .algorithmEffectsOptions) {
             self.algorithmEffectsOptions = AlgorithmEffectsOptions(rawValue: algorithmEffectsOptionsRaw)

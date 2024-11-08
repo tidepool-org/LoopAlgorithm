@@ -6,14 +6,13 @@
 //
 
 import Foundation
-import HealthKit
 
 
 /// Derives a continued glucose effect from recent prediction discrepancies
 public protocol RetrospectiveCorrection {
 
     /// Overall retrospective correction effect
-    var totalGlucoseCorrectionEffect: HKQuantity? { get }
+    var totalGlucoseCorrectionEffect: LoopQuantity? { get }
 
     /// Calculates overall correction effect based on timeline of discrepancies, and updates glucoseCorrectionEffect
     ///

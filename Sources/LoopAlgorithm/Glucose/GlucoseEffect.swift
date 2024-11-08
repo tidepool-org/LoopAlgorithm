@@ -6,14 +6,13 @@
 //
 
 import Foundation
-import HealthKit
 
 
 public struct GlucoseEffect: GlucoseValue, Equatable {
     public let startDate: Date
-    public let quantity: HKQuantity
+    public let quantity: LoopQuantity
 
-    public init(startDate: Date, quantity: HKQuantity) {
+    public init(startDate: Date, quantity: LoopQuantity) {
         self.startDate = startDate
         self.quantity = quantity
     }
@@ -23,7 +22,7 @@ extension GlucoseEffect: Codable {
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         self.init(startDate: try container.decode(Date.self, forKey: .startDate),
-                  quantity: HKQuantity(unit: .milligramsPerDeciliter, doubleValue: try container.decode(Double.self, forKey: .quantity)))
+                  quantity: LoopQuantity(unit: .milligramsPerDeciliter, doubleValue: try container.decode(Double.self, forKey: .quantity)))
     }
 
     public func encode(to encoder: Encoder) throws {

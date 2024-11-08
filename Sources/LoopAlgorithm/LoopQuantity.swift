@@ -16,21 +16,13 @@ public struct LoopQuantity: Hashable, Equatable, Comparable, Sendable {
         self.unit = unit
         self.value = value
     }
-
-    /**
-     @method        isCompatibleWithUnit:
-     @abstract      Returns yes if the receiver's value can be converted to a value of the given unit.
-     */
-    func `is`(compatibleWith unit: LoopUnit) -> Bool {
-        self.unit.conversionFactor(from: unit) != nil
-    }
-
+    
     /**
      @method        doubleValueForUnit:
      @abstract      Returns the quantity value converted to the given unit.
      @discussion    Throws an exception if the receiver's value cannot be converted to one of the requested unit.
      */
-    func doubleValue(for unit: LoopUnit) -> Double {
+    public func doubleValue(for unit: LoopUnit) -> Double {
         guard let conversionFactor = self.unit.conversionFactor(from: unit) else {
             fatalError("Conversion Error: \(self.unit.unitString) is not compatible with \(unit.unitString).")
         }

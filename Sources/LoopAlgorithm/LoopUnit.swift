@@ -10,6 +10,7 @@ import Foundation
 public enum LoopUnit: Sendable, CaseIterable {
     case gram
     case internationalUnit
+    case internationalUnitsPerHour
     case milligramsPerDeciliter
     case milligramsPerDeciliterPerSecond
     case milligramsPerDeciliterPerMinute
@@ -26,6 +27,7 @@ public enum LoopUnit: Sendable, CaseIterable {
         switch (self, unit) {
         case (.gram, .gram),
              (.internationalUnit, .internationalUnit),
+             (.internationalUnitsPerHour, .internationalUnitsPerHour),
              (.milligramsPerDeciliter, .milligramsPerDeciliter),
              (.milligramsPerDeciliterPerSecond, .milligramsPerDeciliterPerSecond),
              (.milligramsPerDeciliterPerMinute, .milligramsPerDeciliterPerMinute),
@@ -58,6 +60,7 @@ public enum LoopUnit: Sendable, CaseIterable {
             return 18.018
         case (.gram, _),
              (.internationalUnit, _),
+             (.internationalUnitsPerHour, _),
              (.milligramsPerDeciliter, _),
              (.milligramsPerDeciliterPerSecond, _),
              (.milligramsPerDeciliterPerMinute, _),
@@ -89,6 +92,8 @@ public enum LoopUnit: Sendable, CaseIterable {
             return "mmol/min·L"
         case .internationalUnit:
             return "IU"
+        case .internationalUnitsPerHour:
+            return "IU/hr"
         }
     }
 }

@@ -9,11 +9,13 @@ import Foundation
 
 public enum LoopUnit: Sendable, CaseIterable {
     case gram
+    case gramsPerUnit
     case internationalUnit
     case internationalUnitsPerHour
     case milligramsPerDeciliter
     case milligramsPerDeciliterPerSecond
     case milligramsPerDeciliterPerMinute
+    case milligramsPerDeciliterPerInternationalUnit
     case millimolesPerLiter
     case millimolesPerLiterPerSecond
     case millimolesPerLiterPerMinute
@@ -26,11 +28,13 @@ public enum LoopUnit: Sendable, CaseIterable {
     public func conversionFactor(from unit: LoopUnit) -> Double? {
         switch (self, unit) {
         case (.gram, .gram),
+             (.gramsPerUnit, .gramsPerUnit),
              (.internationalUnit, .internationalUnit),
              (.internationalUnitsPerHour, .internationalUnitsPerHour),
              (.milligramsPerDeciliter, .milligramsPerDeciliter),
              (.milligramsPerDeciliterPerSecond, .milligramsPerDeciliterPerSecond),
              (.milligramsPerDeciliterPerMinute, .milligramsPerDeciliterPerMinute),
+             (.milligramsPerDeciliterPerInternationalUnit, .milligramsPerDeciliterPerInternationalUnit),
              (.millimolesPerLiter, .millimolesPerLiter),
              (.millimolesPerLiterPerSecond, .millimolesPerLiterPerSecond),
              (.millimolesPerLiterPerMinute, .millimolesPerLiterPerMinute),
@@ -59,16 +63,20 @@ public enum LoopUnit: Sendable, CaseIterable {
         case (.millimolesPerLiterPerMinute, .milligramsPerDeciliterPerMinute):
             return 18.018
         case (.gram, _),
+             (.gramsPerUnit, _),
              (.internationalUnit, _),
              (.internationalUnitsPerHour, _),
              (.milligramsPerDeciliter, _),
              (.milligramsPerDeciliterPerSecond, _),
              (.milligramsPerDeciliterPerMinute, _),
+             (.milligramsPerDeciliterPerInternationalUnit, _),
              (.millimolesPerLiter, _),
              (.millimolesPerLiterPerSecond, _),
              (.millimolesPerLiterPerMinute, _),
              (.percent, _):
             return nil
+        default:
+            fatalError()
         }
     }
     
@@ -76,6 +84,8 @@ public enum LoopUnit: Sendable, CaseIterable {
         switch self {
         case .gram:
             return "g"
+        case .gramsPerUnit:
+            return "g/IU"
         case .percent:
             return "%"
         case .milligramsPerDeciliter:
@@ -84,6 +94,8 @@ public enum LoopUnit: Sendable, CaseIterable {
             return "mg/dL·s"
         case .milligramsPerDeciliterPerMinute:
             return "mg/min·dL"
+        case .milligramsPerDeciliterPerInternationalUnit:
+            return "mg/dL·IU"
         case .millimolesPerLiter:
             return "mmol/L"
         case .millimolesPerLiterPerSecond:

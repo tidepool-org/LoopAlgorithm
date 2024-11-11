@@ -19,7 +19,9 @@ public enum LoopUnit: Sendable, CaseIterable {
     case millimolesPerLiter
     case millimolesPerLiterPerSecond
     case millimolesPerLiterPerMinute
+    case millimolesPerLiterPerInternationalUnit
     case percent
+    case hour
     
     public init(from string: String) {
         self = LoopUnit.allCases.first(where: { $0.unitString == string }) ?? .gram
@@ -38,7 +40,9 @@ public enum LoopUnit: Sendable, CaseIterable {
              (.millimolesPerLiter, .millimolesPerLiter),
              (.millimolesPerLiterPerSecond, .millimolesPerLiterPerSecond),
              (.millimolesPerLiterPerMinute, .millimolesPerLiterPerMinute),
-             (.percent, .percent):
+             (.millimolesPerLiterPerInternationalUnit, .millimolesPerLiterPerInternationalUnit),
+             (.percent, .percent),
+             (.hour, .hour):
             return 1
         case (.milligramsPerDeciliterPerSecond, .milligramsPerDeciliterPerMinute),
              (.millimolesPerLiterPerSecond, .millimolesPerLiterPerMinute):
@@ -46,21 +50,19 @@ public enum LoopUnit: Sendable, CaseIterable {
         case (.milligramsPerDeciliterPerMinute, .milligramsPerDeciliterPerSecond),
              (.millimolesPerLiterPerMinute, .millimolesPerLiterPerSecond):
             return 1/60
-        case (.milligramsPerDeciliterPerSecond, .millimolesPerLiterPerSecond):
+        case (.milligramsPerDeciliterPerSecond, .millimolesPerLiterPerSecond),
+             (.milligramsPerDeciliterPerMinute, .millimolesPerLiterPerMinute),
+             (.milligramsPerDeciliterPerInternationalUnit, .millimolesPerLiterPerInternationalUnit):
             return 0.0555
-        case (.milligramsPerDeciliterPerSecond, .millimolesPerLiterPerMinute):
+        case (.milligramsPerDeciliterPerSecond, .millimolesPerLiterPerMinute),
+             (.millimolesPerLiterPerSecond, .milligramsPerDeciliterPerMinute),
+             (.millimolesPerLiterPerInternationalUnit, .milligramsPerDeciliterPerInternationalUnit):
             return 0.0555 * 60
-        case (.milligramsPerDeciliterPerMinute, .millimolesPerLiterPerSecond):
+        case (.milligramsPerDeciliterPerMinute, .millimolesPerLiterPerSecond),
+             (.millimolesPerLiterPerMinute, .milligramsPerDeciliterPerSecond):
             return 0.0555 / 60
-        case (.milligramsPerDeciliterPerMinute, .millimolesPerLiterPerMinute):
-            return 0.0555
-        case (.millimolesPerLiterPerSecond, .milligramsPerDeciliterPerSecond):
-            return 18.018
-        case (.millimolesPerLiterPerSecond, .milligramsPerDeciliterPerMinute):
-            return 18.018 * 60
-        case (.millimolesPerLiterPerMinute, .milligramsPerDeciliterPerSecond):
-            return 18.018 / 60
-        case (.millimolesPerLiterPerMinute, .milligramsPerDeciliterPerMinute):
+        case (.millimolesPerLiterPerSecond, .milligramsPerDeciliterPerSecond),
+             (.millimolesPerLiterPerMinute, .milligramsPerDeciliterPerMinute):
             return 18.018
         case (.gram, _),
              (.gramsPerUnit, _),
@@ -73,7 +75,9 @@ public enum LoopUnit: Sendable, CaseIterable {
              (.millimolesPerLiter, _),
              (.millimolesPerLiterPerSecond, _),
              (.millimolesPerLiterPerMinute, _),
-             (.percent, _):
+             (.millimolesPerLiterPerInternationalUnit, _),
+             (.percent, _),
+             (.hour, _):
             return nil
         default:
             fatalError()
@@ -102,10 +106,14 @@ public enum LoopUnit: Sendable, CaseIterable {
             return "mmol/L·s"
         case .millimolesPerLiterPerMinute:
             return "mmol/min·L"
+        case .millimolesPerLiterPerInternationalUnit:
+            return "mmol/L·IU"
         case .internationalUnit:
             return "IU"
         case .internationalUnitsPerHour:
             return "IU/hr"
+        case .hour:
+            return "hr"
         }
     }
 }

@@ -22,6 +22,7 @@ public enum LoopUnit: Sendable, CaseIterable {
     case millimolesPerLiterPerInternationalUnit
     case percent
     case hour
+    case minute
     case second
     
     public init(from string: String) {
@@ -44,13 +45,18 @@ public enum LoopUnit: Sendable, CaseIterable {
              (.millimolesPerLiterPerInternationalUnit, .millimolesPerLiterPerInternationalUnit),
              (.percent, .percent),
              (.hour, .hour),
+             (.minute, .minute),
              (.second, .second):
             return 1
         case (.milligramsPerDeciliterPerSecond, .milligramsPerDeciliterPerMinute),
-             (.millimolesPerLiterPerSecond, .millimolesPerLiterPerMinute):
+             (.millimolesPerLiterPerSecond, .millimolesPerLiterPerMinute),
+             (.second, .minute),
+             (.minute, .hour):
             return 60
         case (.milligramsPerDeciliterPerMinute, .milligramsPerDeciliterPerSecond),
-             (.millimolesPerLiterPerMinute, .millimolesPerLiterPerSecond):
+             (.millimolesPerLiterPerMinute, .millimolesPerLiterPerSecond),
+             (.minute, .second),
+             (.hour, .minute):
             return 1/60
         case (.second, .hour):
             return 3600
@@ -84,6 +90,7 @@ public enum LoopUnit: Sendable, CaseIterable {
              (.millimolesPerLiterPerInternationalUnit, _),
              (.percent, _),
              (.hour, _),
+             (.minute, _),
              (.second, _):
             return nil
         default:
@@ -121,6 +128,8 @@ public enum LoopUnit: Sendable, CaseIterable {
             return "IU/hr"
         case .hour:
             return "hr"
+        case .minute:
+            return "min"
         case .second:
             return "s"
         }

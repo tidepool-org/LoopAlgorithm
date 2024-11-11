@@ -17,6 +17,10 @@ public struct LoopQuantity: Hashable, Equatable, Comparable, Sendable {
         self.value = value
     }
     
+    public func `is`(compatibleWith unit: LoopUnit) -> Bool {
+        unit.conversionFactor(from: unit) != nil
+    }
+    
     /**
      @method        doubleValueForUnit:
      @abstract      Returns the quantity value converted to the given unit.

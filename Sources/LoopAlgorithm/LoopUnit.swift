@@ -7,6 +7,8 @@
 
 import Foundation
 
+private let UnitMolarMassBloodGlucose = 180.1558800000541
+
 public enum LoopUnit: Sendable, CaseIterable {
     case gram
     case gramsPerUnit
@@ -68,15 +70,15 @@ public enum LoopUnit: Sendable, CaseIterable {
              (.milligramsPerDeciliterPerInternationalUnit, .millimolesPerLiterPerInternationalUnit):
             return 0.0555
         case (.millimolesPerLiter, .milligramsPerDeciliter),
-             (.millimolesPerLiterPerSecond, .milligramsPerDeciliterPerMinute),
-             (.millimolesPerLiterPerSecond, .milligramsPerDeciliterPerMinute),
+             (.millimolesPerLiterPerSecond, .milligramsPerDeciliterPerSecond),
+             (.millimolesPerLiterPerMinute, .milligramsPerDeciliterPerMinute),
              (.millimolesPerLiterPerInternationalUnit, .milligramsPerDeciliterPerInternationalUnit):
             return 0.0555 * 60
         case (.milligramsPerDeciliterPerMinute, .millimolesPerLiterPerSecond),
              (.millimolesPerLiterPerMinute, .milligramsPerDeciliterPerSecond):
             return 0.0555 / 60
-        case (.millimolesPerLiterPerSecond, .milligramsPerDeciliterPerSecond),
-             (.millimolesPerLiterPerMinute, .milligramsPerDeciliterPerMinute):
+        case (.millimolesPerLiterPerSecond, .milligramsPerDeciliterPerMinute),
+             (.milligramsPerDeciliterPerSecond, .millimolesPerLiterPerMinute):
             return 18.018
         case (.gram, _),
              (.gramsPerUnit, _),
@@ -117,13 +119,13 @@ public enum LoopUnit: Sendable, CaseIterable {
         case .milligramsPerDeciliterPerInternationalUnit:
             return "mg/dL·IU"
         case .millimolesPerLiter:
-            return "mmol/L"
+            return "mmol<\(UnitMolarMassBloodGlucose)>/L"
         case .millimolesPerLiterPerSecond:
-            return "mmol/L·s"
+            return "mmol<\(UnitMolarMassBloodGlucose)>/L·s"
         case .millimolesPerLiterPerMinute:
-            return "mmol/min·L"
+            return "mmol<\(UnitMolarMassBloodGlucose)>/min·L"
         case .millimolesPerLiterPerInternationalUnit:
-            return "mmol/L·IU"
+            return "mmol<\(UnitMolarMassBloodGlucose)>/L·IU"
         case .internationalUnit:
             return "IU"
         case .internationalUnitsPerHour:

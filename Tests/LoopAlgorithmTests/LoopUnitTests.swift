@@ -7,6 +7,7 @@
 
 import XCTest
 @testable import LoopAlgorithm
+#if canImport(HealthKit)
 import HealthKit
 
 class LoopUnitTests: XCTestCase {
@@ -212,3 +213,4 @@ extension LoopUnitTests {
         XCTAssertEqual(loopUnitFromHKUnit, unit)
     }
 }
+#endif

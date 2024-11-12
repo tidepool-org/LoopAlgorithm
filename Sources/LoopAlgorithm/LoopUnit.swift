@@ -68,18 +68,18 @@ public enum LoopUnit: Sendable, CaseIterable {
              (.milligramsPerDeciliterPerSecond, .millimolesPerLiterPerSecond),
              (.milligramsPerDeciliterPerMinute, .millimolesPerLiterPerMinute),
              (.milligramsPerDeciliterPerInternationalUnit, .millimolesPerLiterPerInternationalUnit):
-            return 0.0555
+            return 1/18
         case (.millimolesPerLiter, .milligramsPerDeciliter),
              (.millimolesPerLiterPerSecond, .milligramsPerDeciliterPerSecond),
              (.millimolesPerLiterPerMinute, .milligramsPerDeciliterPerMinute),
              (.millimolesPerLiterPerInternationalUnit, .milligramsPerDeciliterPerInternationalUnit):
-            return 0.0555 * 60
+            return 1/18 * 60
         case (.milligramsPerDeciliterPerMinute, .millimolesPerLiterPerSecond),
              (.millimolesPerLiterPerMinute, .milligramsPerDeciliterPerSecond):
-            return 0.0555 / 60
+            return 1/18 / 60
         case (.millimolesPerLiterPerSecond, .milligramsPerDeciliterPerMinute),
              (.milligramsPerDeciliterPerSecond, .millimolesPerLiterPerMinute):
-            return 18.018
+            return 18
         case (.gram, _),
              (.gramsPerUnit, _),
              (.internationalUnit, _),

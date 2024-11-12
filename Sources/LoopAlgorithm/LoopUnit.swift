@@ -62,11 +62,13 @@ public enum LoopUnit: Sendable, CaseIterable {
             return 3600
         case (.hour, .second):
             return 1/3600
-        case (.milligramsPerDeciliterPerSecond, .millimolesPerLiterPerSecond),
+        case (.milligramsPerDeciliter, .millimolesPerLiter),
+             (.milligramsPerDeciliterPerSecond, .millimolesPerLiterPerSecond),
              (.milligramsPerDeciliterPerMinute, .millimolesPerLiterPerMinute),
              (.milligramsPerDeciliterPerInternationalUnit, .millimolesPerLiterPerInternationalUnit):
             return 0.0555
-        case (.milligramsPerDeciliterPerSecond, .millimolesPerLiterPerMinute),
+        case (.millimolesPerLiter, .milligramsPerDeciliter),
+             (.millimolesPerLiterPerSecond, .milligramsPerDeciliterPerMinute),
              (.millimolesPerLiterPerSecond, .milligramsPerDeciliterPerMinute),
              (.millimolesPerLiterPerInternationalUnit, .milligramsPerDeciliterPerInternationalUnit):
             return 0.0555 * 60

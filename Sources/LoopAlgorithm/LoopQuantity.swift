@@ -18,7 +18,7 @@ public struct LoopQuantity: Hashable, Equatable, Comparable, Sendable {
     }
     
     public func `is`(compatibleWith unit: LoopUnit) -> Bool {
-        unit.conversionFactor(from: unit) != nil
+        self.unit.conversionFactor(from: unit) != nil
     }
     
     /**

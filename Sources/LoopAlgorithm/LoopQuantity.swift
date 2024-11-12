@@ -57,4 +57,14 @@ public struct LoopQuantity: Hashable, Equatable, Comparable, Sendable {
     public static func <(lhs: LoopQuantity, rhs: LoopQuantity) -> Bool {
         return lhs.compare(rhs) == .orderedAscending
     }
+    
+    public static func == (lhs: LoopQuantity, rhs: LoopQuantity) -> Bool {
+        var unit = lhs.unit
+        let isCompatible = lhs.is(compatibleWith: rhs.unit)
+        guard isCompatible else {
+            return lhs == rhs
+        }
+        
+        return lhs == rhs && (lhs.doubleValue(for: unit) == rhs.doubleValue(for: unit))
+    }
 }

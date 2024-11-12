@@ -60,9 +60,9 @@ public struct LoopQuantity: Hashable, Equatable, Comparable, Sendable {
     
     public static func == (lhs: LoopQuantity, rhs: LoopQuantity) -> Bool {
         guard rhs.is(compatibleWith: lhs.unit) else {
-            return lhs == rhs
+            return lhs.unit == rhs.unit && lhs.value == rhs.value
         }
         
-        return lhs == rhs && (lhs.doubleValue(for: lhs.unit) == rhs.doubleValue(for: lhs.unit))
+        return lhs.unit == rhs.unit && lhs.value == rhs.value && (lhs.doubleValue(for: lhs.unit) == rhs.doubleValue(for: lhs.unit))
     }
 }

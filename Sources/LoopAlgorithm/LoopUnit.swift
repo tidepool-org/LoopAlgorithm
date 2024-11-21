@@ -7,7 +7,8 @@
 
 import Foundation
 
-private let UnitMolarMassBloodGlucose = 180.1558800000541
+let UnitMolarMassBloodGlucose = 180.1558800000541
+let UnitMolarMassBloodGlucoseDivisible = UnitMolarMassBloodGlucose / 10
 
 public enum LoopUnit: Sendable, CaseIterable {
     case gram
@@ -68,18 +69,18 @@ public enum LoopUnit: Sendable, CaseIterable {
              (.milligramsPerDeciliterPerSecond, .millimolesPerLiterPerSecond),
              (.milligramsPerDeciliterPerMinute, .millimolesPerLiterPerMinute),
              (.milligramsPerDeciliterPerInternationalUnit, .millimolesPerLiterPerInternationalUnit):
-            return 1/18
+            return 1/UnitMolarMassBloodGlucoseDivisible
         case (.millimolesPerLiter, .milligramsPerDeciliter),
              (.millimolesPerLiterPerSecond, .milligramsPerDeciliterPerSecond),
              (.millimolesPerLiterPerMinute, .milligramsPerDeciliterPerMinute),
              (.millimolesPerLiterPerInternationalUnit, .milligramsPerDeciliterPerInternationalUnit):
-            return 1/18 * 60
+            return UnitMolarMassBloodGlucoseDivisible
         case (.milligramsPerDeciliterPerMinute, .millimolesPerLiterPerSecond),
              (.millimolesPerLiterPerMinute, .milligramsPerDeciliterPerSecond):
-            return 1/18 / 60
+            return 1/UnitMolarMassBloodGlucoseDivisible / 60
         case (.millimolesPerLiterPerSecond, .milligramsPerDeciliterPerMinute),
              (.milligramsPerDeciliterPerSecond, .millimolesPerLiterPerMinute):
-            return 18
+            return UnitMolarMassBloodGlucoseDivisible * 60
         case (.gram, _),
              (.gramsPerUnit, _),
              (.internationalUnit, _),

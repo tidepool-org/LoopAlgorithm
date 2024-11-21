@@ -170,33 +170,37 @@ class LoopUnitTests: XCTestCase {
     func testGlucoseConversion() {
         var unit1 = LoopUnit.milligramsPerDeciliter
         var unit2 = LoopUnit.millimolesPerLiter
-        XCTAssertEqual(unit1.conversionFactor(from: unit2), 0.0555)
-        XCTAssertEqual(unit2.conversionFactor(from: unit1), 0.0555 * 60)
+        XCTAssertEqual(unit1.conversionFactor(from: unit2), 1/UnitMolarMassBloodGlucoseDivisible)
+        XCTAssertEqual(unit2.conversionFactor(from: unit1), UnitMolarMassBloodGlucoseDivisible)
         
         unit1 = LoopUnit.milligramsPerDeciliterPerSecond
         unit2 = LoopUnit.millimolesPerLiterPerSecond
-        XCTAssertEqual(unit1.conversionFactor(from: unit2), 0.0555)
-        XCTAssertEqual(unit2.conversionFactor(from: unit1), 0.0555 * 60)
+        XCTAssertEqual(unit1.conversionFactor(from: unit2), 1/UnitMolarMassBloodGlucoseDivisible)
+        XCTAssertEqual(unit2.conversionFactor(from: unit1), UnitMolarMassBloodGlucoseDivisible)
         
         unit1 = LoopUnit.milligramsPerDeciliterPerMinute
         unit2 = LoopUnit.millimolesPerLiterPerMinute
-        XCTAssertEqual(unit1.conversionFactor(from: unit2), 0.0555)
-        XCTAssertEqual(unit2.conversionFactor(from: unit1), 0.0555 * 60)
+        XCTAssertEqual(unit1.conversionFactor(from: unit2), 1/UnitMolarMassBloodGlucoseDivisible)
+        XCTAssertEqual(unit2.conversionFactor(from: unit1), UnitMolarMassBloodGlucoseDivisible)
         
         unit1 = LoopUnit.milligramsPerDeciliterPerInternationalUnit
         unit2 = LoopUnit.millimolesPerLiterPerInternationalUnit
-        XCTAssertEqual(unit1.conversionFactor(from: unit2), 0.0555)
-        XCTAssertEqual(unit2.conversionFactor(from: unit1), 0.0555 * 60)
+        XCTAssertEqual(unit1.conversionFactor(from: unit2), 1/UnitMolarMassBloodGlucoseDivisible)
+        XCTAssertEqual(unit2.conversionFactor(from: unit1), UnitMolarMassBloodGlucoseDivisible)
         
         unit1 = LoopUnit.milligramsPerDeciliterPerMinute
         unit2 = LoopUnit.millimolesPerLiterPerSecond
-        XCTAssertEqual(unit1.conversionFactor(from: unit2), 0.0555 / 60)
-        XCTAssertEqual(unit2.conversionFactor(from: unit1), 18.018)
+        XCTAssertEqual(unit1.conversionFactor(from: unit2), 1/UnitMolarMassBloodGlucoseDivisible / 60)
+        XCTAssertEqual(unit2.conversionFactor(from: unit1), UnitMolarMassBloodGlucoseDivisible * 60)
         
         unit1 = LoopUnit.milligramsPerDeciliterPerSecond
         unit2 = LoopUnit.millimolesPerLiterPerMinute
-        XCTAssertEqual(unit1.conversionFactor(from: unit2), 18.018)
-        XCTAssertEqual(unit2.conversionFactor(from: unit1), 0.0555 / 60)
+        XCTAssertEqual(unit1.conversionFactor(from: unit2), UnitMolarMassBloodGlucoseDivisible * 60)
+        XCTAssertEqual(unit2.conversionFactor(from: unit1), 1/UnitMolarMassBloodGlucoseDivisible / 60)
+        
+        let quantity1 = LoopQuantity(unit: .millimolesPerLiter, doubleValue: 4)
+        let quantity2 = LoopQuantity(unit: .milligramsPerDeciliter, doubleValue: 72.06235200002165)
+        XCTAssertEqual(quantity1, quantity2)
     }
 }
 

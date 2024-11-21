@@ -45,9 +45,9 @@ public struct LoopQuantity: Hashable, Equatable, Comparable, Sendable {
      @discussion    Throws an exception if the unit of the given quantity is not compatible with the receiver's unit.
      */
     public func compare(_ quantity: LoopQuantity) -> ComparisonResult {
-        if value == quantity.value {
+        if value == quantity.doubleValue(for: unit) {
             return .orderedSame
-        } else if value > quantity.value {
+        } else if value > quantity.doubleValue(for: unit) {
             return .orderedDescending
         } else {
             return .orderedAscending

@@ -14,7 +14,7 @@ public struct LoopQuantity: Hashable, Equatable, Comparable, Sendable {
     
     public init(unit: LoopUnit, doubleValue value: Double) {
         self.unit = unit
-        self.value = Double(Decimal(string: "\(value)")!.description)!
+        self.value = value
     }
     
     public func `is`(compatibleWith unit: LoopUnit) -> Bool {

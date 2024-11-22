@@ -86,5 +86,3 @@ extension PredictedGlucoseValue: Codable {
         case quantityUnit
     }
 }
-
-//extension HKQuantitySample: GlucoseValue { }

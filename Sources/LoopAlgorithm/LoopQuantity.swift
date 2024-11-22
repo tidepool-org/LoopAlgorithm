@@ -10,7 +10,7 @@ import Foundation
 public struct LoopQuantity: Hashable, Equatable, Comparable, Sendable {
 
     public let unit: LoopUnit
-    public let value: Double
+    private let value: Double
     
     public init(unit: LoopUnit, doubleValue value: Double) {
         self.unit = unit
@@ -59,6 +59,10 @@ public struct LoopQuantity: Hashable, Equatable, Comparable, Sendable {
     }
     
     public static func == (lhs: LoopQuantity, rhs: LoopQuantity) -> Bool {
+        guard lhs.unit != rhs.unit else {
+            return lhs.value == rhs.value
+        }
+        
         guard rhs.is(compatibleWith: lhs.unit) else {
             return false
         }

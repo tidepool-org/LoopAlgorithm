@@ -1,5 +1,5 @@
 //
-//  File.swift
+//  LoopQuantity.swift
 //  LoopAlgorithm
 //
 //  Created by Cameron Ingham on 11/8/24.

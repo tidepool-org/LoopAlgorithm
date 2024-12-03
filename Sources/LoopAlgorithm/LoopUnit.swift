@@ -139,4 +139,41 @@ public enum LoopUnit: Sendable, CaseIterable {
             return "s"
         }
     }
+    
+    public var localizedShortUnitString: String {
+        switch self {
+        case .millimolesPerLiter: return NSLocalizedString("mmol/L", comment: "The short unit display string for millimoles of glucose per liter")
+        case .milligramsPerDeciliter: return NSLocalizedString("mg/dL", comment: "The short unit display string for milligrams of glucose per decilter")
+        case .internationalUnit: return NSLocalizedString("U", comment: "The short unit display string for international units of insulin")
+        case .gram: return NSLocalizedString("g", comment: "The short unit display string for grams")
+        default: return String(describing: self)
+        }
+    }
+    
+    public enum GlucoseInterval: Sendable {
+        case minutes
+        case seconds
+    }
+    
+    public func glucose(per interval: GlucoseInterval) -> LoopUnit {
+        switch self {
+        case .milligramsPerDeciliter:
+            switch interval {
+            case .minutes:
+                return .milligramsPerDeciliterPerMinute
+            case .seconds:
+                return .milligramsPerDeciliterPerSecond
+            }
+            
+        case.millimolesPerLiter:
+            switch interval {
+            case .minutes:
+                return .millimolesPerLiterPerMinute
+            case .seconds:
+                return .millimolesPerLiterPerSecond
+            }
+        default:
+            fatalError("\(self.unitString) is not a glucoseUnit")
+        }
+    }
 }

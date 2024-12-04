@@ -7,7 +7,6 @@
 //
 
 import Foundation
-import HealthKit
 
 public struct InsulinValue: TimelineValue, Equatable {
     public let startDate: Date
@@ -18,8 +17,8 @@ public struct InsulinValue: TimelineValue, Equatable {
         self.value = value
     }
 
-    public var quantity: HKQuantity {
-        HKQuantity(unit: .internationalUnit(), doubleValue: value)
+    public var quantity: LoopQuantity {
+        LoopQuantity(unit: .internationalUnit, doubleValue: value)
     }
 }
 

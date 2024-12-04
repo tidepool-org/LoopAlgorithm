@@ -7,7 +7,6 @@
 //
 
 import Foundation
-import HealthKit
 
 /**
  Standard Retrospective Correction (RC) calculates a correction effect in glucose prediction based on the most recent discrepancy between observed glucose movement and movement expected based on insulin and carb models. Standard retrospective correction acts as a proportional (P) controller aimed at reducing modeling errors in glucose prediction.
@@ -19,10 +18,10 @@ public class StandardRetrospectiveCorrection: RetrospectiveCorrection {
     /// Standard effect duration
     let effectDuration: TimeInterval
     /// Overall retrospective correction effect
-    public var totalGlucoseCorrectionEffect: HKQuantity?
+    public var totalGlucoseCorrectionEffect: LoopQuantity?
 
     /// All math is performed with glucose expressed in mg/dL
-    private let unit = HKUnit.milligramsPerDeciliter
+    private let unit = LoopUnit.milligramsPerDeciliter
 
     public init(effectDuration: TimeInterval) {
         self.effectDuration = effectDuration
@@ -45,11 +44,11 @@ public class StandardRetrospectiveCorrection: RetrospectiveCorrection {
         
         // Standard retrospective correction math
         let currentDiscrepancyValue = currentDiscrepancy.quantity.doubleValue(for: unit)
-        totalGlucoseCorrectionEffect = HKQuantity(unit: unit, doubleValue: currentDiscrepancyValue)
+        totalGlucoseCorrectionEffect = LoopQuantity(unit: unit, doubleValue: currentDiscrepancyValue)
         
         let retrospectionTimeInterval = currentDiscrepancy.endDate.timeIntervalSince(currentDiscrepancy.startDate)
         let discrepancyTime = max(retrospectionTimeInterval, retrospectiveCorrectionGroupingInterval)
-        let velocity = HKQuantity(unit: unit.unitDivided(by: .second()), doubleValue: currentDiscrepancyValue / discrepancyTime)
+        let velocity = LoopQuantity(unit: .milligramsPerDeciliterPerSecond, doubleValue: currentDiscrepancyValue / discrepancyTime)
         
         // Update array of glucose correction effects
         return startingGlucose.decayEffect(atRate: velocity, for: effectDuration)

@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import HealthKit
 
 
 public protocol TimelineValue {
@@ -23,7 +22,7 @@ public extension TimelineValue {
 
 
 public protocol SampleValue: TimelineValue {
-    var quantity: HKQuantity { get }
+    var quantity: LoopQuantity { get }
 }
 
 

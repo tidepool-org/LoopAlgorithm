@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import HealthKit
 @testable import LoopAlgorithm
 
 extension AlgorithmInputFixture {
@@ -42,13 +41,13 @@ extension AlgorithmInputFixture {
     }
 }
 
-extension HKQuantity {
-    static func glucose(_ mgdl: Double) -> HKQuantity {
+extension LoopQuantity {
+    static func glucose(_ mgdl: Double) -> LoopQuantity {
         return .init(unit: .milligramsPerDeciliter, doubleValue: mgdl)
     }
 
-    static func carbs(_ grams: Double) -> HKQuantity {
-        return .init(unit: .gram(), doubleValue: grams)
+    static func carbs(_ grams: Double) -> LoopQuantity {
+        return .init(unit: .gram, doubleValue: grams)
     }
 
 }

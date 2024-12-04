@@ -6,7 +6,7 @@
 //  Copyright © 2016 Nathan Racklyeft. All rights reserved.
 //
 
-import HealthKit
+import Foundation
 
 public protocol GlucoseSampleValue: GlucoseValue {
     /// Uniquely identifies the source of the sample.
@@ -22,5 +22,5 @@ public protocol GlucoseSampleValue: GlucoseValue {
     var condition: GlucoseCondition? { get }
 
     /// The trend rate of the sample.
-    var trendRate: HKQuantity? { get }
+    var trendRate: LoopQuantity? { get }
 }

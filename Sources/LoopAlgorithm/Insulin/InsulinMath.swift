@@ -7,11 +7,11 @@
 //
 
 import Foundation
-import HealthKit
+
 
 public struct InsulinMath {
-    public static var defaultInsulinActivityDuration: TimeInterval = TimeInterval(hours: 6) + TimeInterval(minutes: 10)
-    public static var longestInsulinActivityDuration: TimeInterval = TimeInterval(hours: 6) + TimeInterval(minutes: 10)
+    public static let defaultInsulinActivityDuration: TimeInterval = TimeInterval(hours: 6) + TimeInterval(minutes: 10)
+    public static let longestInsulinActivityDuration: TimeInterval = TimeInterval(hours: 6) + TimeInterval(minutes: 10)
 }
 
 extension BasalRelativeDose {
@@ -337,7 +337,7 @@ extension Collection where Element == BasalRelativeDose {
     ///   - delta: The interval between returned effects
     /// - Returns: An array of glucose effects for the duration of the doses
     public func glucoseEffects(
-        insulinSensitivityHistory: [AbsoluteScheduleValue<HKQuantity>],
+        insulinSensitivityHistory: [AbsoluteScheduleValue<LoopQuantity>],
         from start: Date? = nil,
         to end: Date? = nil,
         delta: TimeInterval = TimeInterval(/* minutes: */60 * 5)
@@ -353,7 +353,7 @@ extension Collection where Element == BasalRelativeDose {
 
         var date = start
         var values = [GlucoseEffect]()
-        let unit = HKUnit.milligramsPerDeciliter
+        let unit = LoopUnit.milligramsPerDeciliter
 
         repeat {
             let value = reduce(0) { (value, dose) -> Double in
@@ -366,7 +366,7 @@ extension Collection where Element == BasalRelativeDose {
                 return value + doseEffect
             }
 
-            values.append(GlucoseEffect(startDate: date, quantity: HKQuantity(unit: unit, doubleValue: value)))
+            values.append(GlucoseEffect(startDate: date, quantity: LoopQuantity(unit: unit, doubleValue: value)))
             date = date.addingTimeInterval(delta)
         } while date <= end
 
@@ -386,7 +386,7 @@ extension Collection where Element == BasalRelativeDose {
     /// - Returns: An array of glucose effects for the duration of the doses
     public func glucoseEffectsMidAbsorptionISF(
         longestEffectDuration: TimeInterval = InsulinMath.defaultInsulinActivityDuration,
-        insulinSensitivityHistory: [AbsoluteScheduleValue<HKQuantity>],
+        insulinSensitivityHistory: [AbsoluteScheduleValue<LoopQuantity>],
         from start: Date? = nil,
         to end: Date? = nil,
         delta: TimeInterval = TimeInterval(/* minutes: */60 * 5)
@@ -400,7 +400,7 @@ extension Collection where Element == BasalRelativeDose {
         var lastDate = start
         var date = start
         var values = [GlucoseEffect]()
-        let unit = HKUnit.milligramsPerDeciliter
+        let unit = LoopUnit.milligramsPerDeciliter
 
         var value: Double = 0
         repeat {
@@ -423,7 +423,7 @@ extension Collection where Element == BasalRelativeDose {
                 })
             }
 
-            values.append(GlucoseEffect(startDate: date, quantity: HKQuantity(unit: unit, doubleValue: value)))
+            values.append(GlucoseEffect(startDate: date, quantity: LoopQuantity(unit: unit, doubleValue: value)))
             lastDate = date
             date = date.addingTimeInterval(delta)
         } while date <= end
@@ -442,14 +442,14 @@ extension Collection where Element == BasalRelativeDose {
     /// - Returns: An array of glucose effects for the duration of the doses
     public func glucoseEffects(
         longestEffectDuration: TimeInterval = InsulinMath.defaultInsulinActivityDuration,
-        insulinSensitivityTimeline: [AbsoluteScheduleValue<HKQuantity>],
+        insulinSensitivityTimeline: [AbsoluteScheduleValue<LoopQuantity>],
         effectDates: [Date],
         delta: TimeInterval = TimeInterval(/* minutes: */60 * 5)
     ) -> [GlucoseEffect] {
 
         var lastDate = effectDates.first!
         var values = [GlucoseEffect]()
-        let unit = HKUnit.milligramsPerDeciliter
+        let unit = LoopUnit.milligramsPerDeciliter
 
         for date in effectDates {
             // Sum effects over doses
@@ -468,7 +468,7 @@ extension Collection where Element == BasalRelativeDose {
                 })
             }
 
-            values.append(GlucoseEffect(startDate: date, quantity: HKQuantity(unit: unit, doubleValue: value)))
+            values.append(GlucoseEffect(startDate: date, quantity: LoopQuantity(unit: unit, doubleValue: value)))
             lastDate = date
         }
 

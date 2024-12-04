@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import HealthKit
 
 public enum AlgorithmInputFixtureDecodingError: Error {
     case invalidDoseRecommendationType
@@ -21,10 +20,10 @@ public struct AlgorithmInputFixture: AlgorithmInput {
     public var doses: [FixtureInsulinDose]
     public var carbEntries: [FixtureCarbEntry]
     public var basal: [AbsoluteScheduleValue<Double>]
-    public var sensitivity: [AbsoluteScheduleValue<HKQuantity>]
+    public var sensitivity: [AbsoluteScheduleValue<LoopQuantity>]
     public var carbRatio: [AbsoluteScheduleValue<Double>]
     public var target: GlucoseRangeTimeline
-    public var suspendThreshold: HKQuantity?
+    public var suspendThreshold: LoopQuantity?
     public var maxBolus: Double
     public var maxBasalRate: Double
     public var useIntegralRetrospectiveCorrection: Bool
@@ -58,10 +57,10 @@ public struct AlgorithmInputFixture: AlgorithmInput {
         doses: [FixtureInsulinDose],
         carbEntries: [FixtureCarbEntry],
         basal: [AbsoluteScheduleValue<Double>],
-        sensitivity: [AbsoluteScheduleValue<HKQuantity>],
+        sensitivity: [AbsoluteScheduleValue<LoopQuantity>],
         carbRatio: [AbsoluteScheduleValue<Double>],
         target: GlucoseRangeTimeline,
-        suspendThreshold: HKQuantity?,
+        suspendThreshold: LoopQuantity?,
         maxBolus: Double,
         maxBasalRate: Double,
         useIntegralRetrospectiveCorrection: Bool = false,
@@ -104,17 +103,17 @@ extension AlgorithmInputFixture: Codable {
         self.carbEntries = try container.decode([FixtureCarbEntry].self, forKey: .carbEntries)
         self.basal = try container.decode([AbsoluteScheduleValue<Double>].self, forKey: .basal)
         let sensitivityMgdl = try container.decode([AbsoluteScheduleValue<Double>].self, forKey: .sensitivity)
-        self.sensitivity = sensitivityMgdl.map { AbsoluteScheduleValue(startDate: $0.startDate, endDate: $0.endDate, value: HKQuantity(unit: .milligramsPerDeciliter, doubleValue: $0.value))}
+        self.sensitivity = sensitivityMgdl.map { AbsoluteScheduleValue(startDate: $0.startDate, endDate: $0.endDate, value: LoopQuantity(unit: .milligramsPerDeciliter, doubleValue: $0.value))}
         self.carbRatio = try container.decode([AbsoluteScheduleValue<Double>].self, forKey: .carbRatio)
         let targetMgdl = try container.decode([TargetEntry].self, forKey: .target)
         self.target = targetMgdl.map {
-            let lower = HKQuantity(unit: .milligramsPerDeciliter, doubleValue: $0.lowerBound)
-            let upper = HKQuantity(unit: .milligramsPerDeciliter, doubleValue: $0.upperBound)
+            let lower = LoopQuantity(unit: .milligramsPerDeciliter, doubleValue: $0.lowerBound)
+            let upper = LoopQuantity(unit: .milligramsPerDeciliter, doubleValue: $0.upperBound)
             let range = ClosedRange(uncheckedBounds: (lower: lower, upper: upper))
             return AbsoluteScheduleValue(startDate: $0.startDate, endDate: $0.endDate, value: range)
         }
         if let suspendThresholdMgdl = try container.decodeIfPresent(Double.self, forKey: .suspendThreshold) {
-            self.suspendThreshold = HKQuantity(unit: .milligramsPerDeciliter, doubleValue: suspendThresholdMgdl)
+            self.suspendThreshold = LoopQuantity(unit: .milligramsPerDeciliter, doubleValue: suspendThresholdMgdl)
         }
         self.maxBolus = try container.decode(Double.self, forKey: .maxBolus)
         self.maxBasalRate = try container.decode(Double.self, forKey: .maxBasalRate)

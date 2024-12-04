@@ -7,7 +7,6 @@
 //
 
 import XCTest
-import HealthKit
 @testable import LoopAlgorithm
 
 public typealias JSONDictionary = [String: Any]
@@ -24,7 +23,7 @@ class CarbMathTests: XCTestCase {
         let dateFormatter = ISO8601DateFormatter.localTimeDate(timeZone: TimeZone(secondsFromGMT: 0)!)
 
         return fixture.map {
-            return GlucoseEffect(startDate: dateFormatter.date(from: $0["date"] as! String)!, quantity: HKQuantity(unit: HKUnit(from: $0["unit"] as! String), doubleValue:$0["amount"] as! Double))
+            return GlucoseEffect(startDate: dateFormatter.date(from: $0["date"] as! String)!, quantity: LoopQuantity(unit: LoopUnit(from: $0["unit"] as! String), doubleValue:$0["amount"] as! Double))
         }
     }
 
@@ -61,7 +60,7 @@ class CarbMathTests: XCTestCase {
             return FixtureCarbEntry(
                 absorptionTime: absorptionTime,
                 startDate: startAt,
-                quantity: HKQuantity(unit: HKUnit(from: $0["unit"] as! String), doubleValue: $0["amount"] as! Double)
+                quantity: LoopQuantity(unit: LoopUnit(from: $0["unit"] as! String), doubleValue: $0["amount"] as! Double)
             )
         }
     }
@@ -71,10 +70,10 @@ class CarbMathTests: XCTestCase {
         let fixture: [JSONDictionary] = loadFixture(name)
         let dateFormatter = ISO8601DateFormatter.localTimeDate(timeZone: TimeZone(secondsFromGMT: 0)!)
 
-        let unit = HKUnit.milligramsPerDeciliter.unitDivided(by: .minute())
+        let unit = LoopUnit.milligramsPerDeciliterPerMinute
 
         return fixture.map {
-            let quantity = HKQuantity(unit: unit, doubleValue: $0["velocity"] as! Double)
+            let quantity = LoopQuantity(unit: unit, doubleValue: $0["velocity"] as! Double)
             return GlucoseEffectVelocity(
                 startDate: dateFormatter.date(from: $0["start_at"] as! String)!,
                 endDate: dateFormatter.date(from: $0["end_at"] as! String)!,
@@ -89,11 +88,11 @@ class CarbMathTests: XCTestCase {
         let carbEntry = FixtureCarbEntry(
             absorptionTime: .minutes(120),
             startDate: startDate,
-            quantity: HKQuantity(unit: HKUnit.gram(), doubleValue: 0)
+            quantity: LoopQuantity(unit: LoopUnit.gram, doubleValue: 0)
         )
 
         let carbRatio = [AbsoluteScheduleValue(startDate: startDate, endDate: endDate, value: 8.0)]
-        let isf = [AbsoluteScheduleValue(startDate: startDate, endDate: endDate, value: HKQuantity(unit: .milligramsPerDeciliter, doubleValue: 40))]
+        let isf = [AbsoluteScheduleValue(startDate: startDate, endDate: endDate, value: LoopQuantity(unit: .milligramsPerDeciliter, doubleValue: 40))]
 
         let statuses = [carbEntry].map(
             to: inputICE,
@@ -115,7 +114,7 @@ class CarbMathTests: XCTestCase {
         let endDate = inputICE.last!.startDate
 
         let carbRatio = [AbsoluteScheduleValue(startDate: startDate, endDate: endDate, value: 9.0)]
-        let isf = [AbsoluteScheduleValue(startDate: startDate, endDate: endDate, value: HKQuantity(unit: .milligramsPerDeciliter, doubleValue: 40))]
+        let isf = [AbsoluteScheduleValue(startDate: startDate, endDate: endDate, value: LoopQuantity(unit: .milligramsPerDeciliter, doubleValue: 40))]
 
         let futureCarbEntry = carbEntries[2]
 
@@ -158,7 +157,7 @@ class CarbMathTests: XCTestCase {
         let endDate = inputICE.last!.startDate
 
         let carbRatio = [AbsoluteScheduleValue(startDate: startDate, endDate: endDate, value: 8.0)]
-        let isf = [AbsoluteScheduleValue(startDate: startDate, endDate: endDate, value: HKQuantity(unit: .milligramsPerDeciliter, doubleValue: 40))]
+        let isf = [AbsoluteScheduleValue(startDate: startDate, endDate: endDate, value: LoopQuantity(unit: .milligramsPerDeciliter, doubleValue: 40))]
 
         let futureCarbEntry = carbEntries[2]
 
@@ -180,13 +179,13 @@ class CarbMathTests: XCTestCase {
             to: inputICE[0].startDate.addingTimeInterval(TimeInterval(hours: 6)),
             absorptionModel: LinearAbsorption())
 
-        let unit = HKUnit.gram()
+        let unit = LoopUnit.gram
 
         XCTAssertEqual(output.count, carbsOnBoard.count)
 
         for (expected, calculated) in zip(output, carbsOnBoard) {
             XCTAssertEqual(expected.startDate, calculated.startDate)
-            XCTAssertEqual(expected.quantity.doubleValue(for: HKUnit.gram()), calculated.quantity.doubleValue(for: HKUnit.gram()), accuracy: Double(Float.ulpOfOne))
+            XCTAssertEqual(expected.quantity.doubleValue(for: unit), calculated.quantity.doubleValue(for: LoopUnit.gram), accuracy: Double(Float.ulpOfOne))
         }
 
         XCTAssertEqual(carbsOnBoard.first!.quantity.doubleValue(for: unit), 0, accuracy: 1)
@@ -202,7 +201,7 @@ class CarbMathTests: XCTestCase {
         let endDate = inputICE.last!.startDate
 
         let carbRatio = [AbsoluteScheduleValue(startDate: startDate, endDate: endDate, value: 8.0)]
-        let isf = [AbsoluteScheduleValue(startDate: startDate, endDate: endDate, value: HKQuantity(unit: .milligramsPerDeciliter, doubleValue: 40))]
+        let isf = [AbsoluteScheduleValue(startDate: startDate, endDate: endDate, value: LoopQuantity(unit: .milligramsPerDeciliter, doubleValue: 40))]
 
         let statuses = [carbEntries[0]].map(
             to: inputICE,
@@ -217,7 +216,7 @@ class CarbMathTests: XCTestCase {
         XCTAssertEqual(statuses[0].absorption!.estimatedTimeRemaining, 8509, accuracy: 1)
 
         let absorption = statuses[0].absorption!
-        let unit = HKUnit.gram()
+        let unit = LoopUnit.gram
 
         XCTAssertEqual(absorption.observed.doubleValue(for: unit), 18, accuracy: Double(Float.ulpOfOne))
 
@@ -231,7 +230,7 @@ class CarbMathTests: XCTestCase {
 
         for (expected, calculated) in zip(output, carbsOnBoard) {
             XCTAssertEqual(expected.startDate, calculated.startDate)
-            XCTAssertEqual(expected.quantity.doubleValue(for: HKUnit.gram()), calculated.quantity.doubleValue(for: HKUnit.gram()), accuracy: Double(Float.ulpOfOne))
+            XCTAssertEqual(expected.quantity.doubleValue(for: unit), calculated.quantity.doubleValue(for: unit), accuracy: Double(Float.ulpOfOne))
         }
 
         XCTAssertEqual(carbsOnBoard.first!.quantity.doubleValue(for: unit), 0, accuracy: 1)
@@ -249,7 +248,7 @@ class CarbMathTests: XCTestCase {
         let endDate = inputICE.last!.startDate
 
         let carbRatio = [AbsoluteScheduleValue(startDate: startDate, endDate: endDate, value: 8.0)]
-        let isf = [AbsoluteScheduleValue(startDate: startDate, endDate: endDate, value: HKQuantity(unit: .milligramsPerDeciliter, doubleValue: 40))]
+        let isf = [AbsoluteScheduleValue(startDate: startDate, endDate: endDate, value: LoopQuantity(unit: .milligramsPerDeciliter, doubleValue: 40))]
 
         let statuses = [carbEntries[0]].map(
             to: inputICE,
@@ -264,7 +263,7 @@ class CarbMathTests: XCTestCase {
         XCTAssertEqual(statuses[0].absorption!.estimatedTimeRemaining, 8509, accuracy: 1)
 
         let absorption = statuses[0].absorption!
-        let unit = HKUnit.gram()
+        let unit = LoopUnit.gram
 
         XCTAssertEqual(absorption.observed.doubleValue(for: unit), 18, accuracy: Double(Float.ulpOfOne))
 
@@ -294,7 +293,7 @@ class CarbMathTests: XCTestCase {
         let endDate = inputICE.last!.startDate
 
         let carbRatio = [AbsoluteScheduleValue(startDate: startDate, endDate: endDate, value: 8.0)]
-        let isf = [AbsoluteScheduleValue(startDate: startDate, endDate: endDate, value: HKQuantity(unit: .milligramsPerDeciliter, doubleValue: 40))]
+        let isf = [AbsoluteScheduleValue(startDate: startDate, endDate: endDate, value: LoopQuantity(unit: .milligramsPerDeciliter, doubleValue: 40))]
 
         let statuses = [carbEntries[0]].map(
             to: inputICE,
@@ -312,7 +311,7 @@ class CarbMathTests: XCTestCase {
         XCTAssertEqual(statuses[0].absorption!.estimatedTimeRemaining, 0, accuracy: 1)
 
         let absorption = statuses[0].absorption!
-        let unit = HKUnit.gram()
+        let unit = LoopUnit.gram
 
         // All should be absorbed
         XCTAssertEqual(absorption.observed.doubleValue(for: unit), 44, accuracy: 1)
@@ -327,7 +326,7 @@ class CarbMathTests: XCTestCase {
 
         for (expected, calculated) in zip(output, carbsOnBoard) {
             XCTAssertEqual(expected.startDate, calculated.startDate)
-            XCTAssertEqual(expected.quantity.doubleValue(for: HKUnit.gram()), calculated.quantity.doubleValue(for: HKUnit.gram()), accuracy: Double(Float.ulpOfOne))
+            XCTAssertEqual(expected.quantity.doubleValue(for: unit), calculated.quantity.doubleValue(for: unit), accuracy: Double(Float.ulpOfOne))
         }
 
         XCTAssertEqual(carbsOnBoard[0].quantity.doubleValue(for: unit), 0, accuracy: 1)
@@ -348,7 +347,7 @@ class CarbMathTests: XCTestCase {
         let endDate = inputICE.last!.startDate
 
         let carbRatio = [AbsoluteScheduleValue(startDate: startDate, endDate: endDate, value: 8.0)]
-        let isf = [AbsoluteScheduleValue(startDate: startDate, endDate: endDate, value: HKQuantity(unit: .milligramsPerDeciliter, doubleValue: 40))]
+        let isf = [AbsoluteScheduleValue(startDate: startDate, endDate: endDate, value: LoopQuantity(unit: .milligramsPerDeciliter, doubleValue: 40))]
 
         let statuses = [carbEntries[0]].map(
             to: inputICE,
@@ -364,7 +363,7 @@ class CarbMathTests: XCTestCase {
         XCTAssertEqual(statuses[0].absorption!.estimatedTimeRemaining, 0, accuracy: 1)
 
         let absorption = statuses[0].absorption!
-        let unit = HKUnit.gram()
+        let unit = LoopUnit.gram
 
         // All should be absorbed
         XCTAssertEqual(absorption.observed.doubleValue(for: unit), 44, accuracy: 1)
@@ -394,7 +393,7 @@ class CarbMathTests: XCTestCase {
         let endDate = inputICE.last!.startDate
 
         let carbRatio = [AbsoluteScheduleValue(startDate: startDate, endDate: endDate, value: 8.0)]
-        let isf = [AbsoluteScheduleValue(startDate: startDate, endDate: endDate, value: HKQuantity(unit: .milligramsPerDeciliter, doubleValue: 40))]
+        let isf = [AbsoluteScheduleValue(startDate: startDate, endDate: endDate, value: LoopQuantity(unit: .milligramsPerDeciliter, doubleValue: 40))]
 
         let statuses = [carbEntries[1]].map(
             to: inputICE,
@@ -418,13 +417,13 @@ class CarbMathTests: XCTestCase {
             absorptionModel: LinearAbsorption()
         )
 
-        let unit = HKUnit.gram()
+        let unit = LoopUnit.gram
 
         XCTAssertEqual(output.count, carbsOnBoard.count)
 
         for (expected, calculated) in zip(output, carbsOnBoard) {
             XCTAssertEqual(expected.startDate, calculated.startDate)
-            XCTAssertEqual(expected.quantity.doubleValue(for: HKUnit.gram()), calculated.quantity.doubleValue(for: HKUnit.gram()), accuracy: Double(Float.ulpOfOne))
+            XCTAssertEqual(expected.quantity.doubleValue(for: unit), calculated.quantity.doubleValue(for: unit), accuracy: Double(Float.ulpOfOne))
         }
 
         XCTAssertEqual(carbsOnBoard.first!.quantity.doubleValue(for: unit), 0, accuracy: 1)
@@ -441,7 +440,7 @@ class CarbMathTests: XCTestCase {
         let endDate = inputICE.last!.startDate
 
         let carbRatio = [AbsoluteScheduleValue(startDate: startDate, endDate: endDate, value: 8.0)]
-        let isf = [AbsoluteScheduleValue(startDate: startDate, endDate: endDate, value: HKQuantity(unit: .milligramsPerDeciliter, doubleValue: 40))]
+        let isf = [AbsoluteScheduleValue(startDate: startDate, endDate: endDate, value: LoopQuantity(unit: .milligramsPerDeciliter, doubleValue: 40))]
 
         let statuses = [carbEntries[1]].map(
             to: inputICE,
@@ -486,7 +485,7 @@ class CarbMathTests: XCTestCase {
         let endDate = inputICE.last!.startDate
 
         let carbRatio = [AbsoluteScheduleValue(startDate: startDate, endDate: endDate, value: 8.0)]
-        let isf = [AbsoluteScheduleValue(startDate: startDate, endDate: endDate, value: HKQuantity(unit: .milligramsPerDeciliter, doubleValue: 40))]
+        let isf = [AbsoluteScheduleValue(startDate: startDate, endDate: endDate, value: LoopQuantity(unit: .milligramsPerDeciliter, doubleValue: 40))]
 
         let futureCarbEntry = carbEntries[2]
 
@@ -507,13 +506,13 @@ class CarbMathTests: XCTestCase {
             absorptionModel: PiecewiseLinearAbsorption()
         )
 
-        let unit = HKUnit.gram()
+        let unit = LoopUnit.gram
 
         XCTAssertEqual(output.count, carbsOnBoard.count)
 
         for (expected, calculated) in zip(output, carbsOnBoard) {
             XCTAssertEqual(expected.startDate, calculated.startDate)
-            XCTAssertEqual(expected.quantity.doubleValue(for: HKUnit.gram()), calculated.quantity.doubleValue(for: HKUnit.gram()), accuracy: Double(Float.ulpOfOne))
+            XCTAssertEqual(expected.quantity.doubleValue(for: unit), calculated.quantity.doubleValue(for: unit), accuracy: Double(Float.ulpOfOne))
         }
 
         XCTAssertEqual(carbsOnBoard.first!.quantity.doubleValue(for: unit), 0, accuracy: 1)
@@ -529,7 +528,7 @@ class CarbMathTests: XCTestCase {
         let endDate = inputICE.last!.startDate
 
         let carbRatio = [AbsoluteScheduleValue(startDate: startDate, endDate: endDate, value: 8.0)]
-        let isf = [AbsoluteScheduleValue(startDate: startDate, endDate: endDate, value: HKQuantity(unit: .milligramsPerDeciliter, doubleValue: 40))]
+        let isf = [AbsoluteScheduleValue(startDate: startDate, endDate: endDate, value: LoopQuantity(unit: .milligramsPerDeciliter, doubleValue: 40))]
 
         let statuses = [carbEntries[0]].map(
             to: inputICE,
@@ -542,7 +541,7 @@ class CarbMathTests: XCTestCase {
         XCTAssertEqual(statuses[0].absorption!.estimatedTimeRemaining, 7008, accuracy: 1)
 
         let absorption = statuses[0].absorption!
-        let unit = HKUnit.gram()
+        let unit = LoopUnit.gram
 
         XCTAssertEqual(absorption.observed.doubleValue(for: unit), 18, accuracy: Double(Float.ulpOfOne))
 
@@ -556,7 +555,7 @@ class CarbMathTests: XCTestCase {
 
         for (expected, calculated) in zip(output, carbsOnBoard) {
             XCTAssertEqual(expected.startDate, calculated.startDate)
-            XCTAssertEqual(expected.quantity.doubleValue(for: HKUnit.gram()), calculated.quantity.doubleValue(for: HKUnit.gram()), accuracy: Double(Float.ulpOfOne))
+            XCTAssertEqual(expected.quantity.doubleValue(for: unit), calculated.quantity.doubleValue(for: unit), accuracy: Double(Float.ulpOfOne))
         }
 
         XCTAssertEqual(carbsOnBoard.first!.quantity.doubleValue(for: unit), 0, accuracy: 1)
@@ -574,7 +573,7 @@ class CarbMathTests: XCTestCase {
         let endDate = inputICE.last!.startDate
 
         let carbRatio = [AbsoluteScheduleValue(startDate: startDate, endDate: endDate, value: 8.0)]
-        let isf = [AbsoluteScheduleValue(startDate: startDate, endDate: endDate, value: HKQuantity(unit: .milligramsPerDeciliter, doubleValue: 40))]
+        let isf = [AbsoluteScheduleValue(startDate: startDate, endDate: endDate, value: LoopQuantity(unit: .milligramsPerDeciliter, doubleValue: 40))]
 
         let statuses = [carbEntries[0]].map(
             to: inputICE,
@@ -589,7 +588,7 @@ class CarbMathTests: XCTestCase {
         XCTAssertEqual(statuses[0].absorption!.estimatedTimeRemaining, 0, accuracy: 1)
 
         let absorption = statuses[0].absorption!
-        let unit = HKUnit.gram()
+        let unit = LoopUnit.gram
 
         // All should be absorbed
         XCTAssertEqual(absorption.observed.doubleValue(for: unit), 44, accuracy: 1)
@@ -604,7 +603,7 @@ class CarbMathTests: XCTestCase {
 
         for (expected, calculated) in zip(output, carbsOnBoard) {
             XCTAssertEqual(expected.startDate, calculated.startDate)
-            XCTAssertEqual(expected.quantity.doubleValue(for: HKUnit.gram()), calculated.quantity.doubleValue(for: HKUnit.gram()), accuracy: Double(Float.ulpOfOne))
+            XCTAssertEqual(expected.quantity.doubleValue(for: unit), calculated.quantity.doubleValue(for: unit), accuracy: Double(Float.ulpOfOne))
         }
 
         XCTAssertEqual(carbsOnBoard[0].quantity.doubleValue(for: unit), 0, accuracy: 1)
@@ -625,7 +624,7 @@ class CarbMathTests: XCTestCase {
         let endDate = inputICE.last!.startDate
 
         let carbRatio = [AbsoluteScheduleValue(startDate: startDate, endDate: endDate, value: 8.0)]
-        let isf = [AbsoluteScheduleValue(startDate: startDate, endDate: endDate, value: HKQuantity(unit: .milligramsPerDeciliter, doubleValue: 40))]
+        let isf = [AbsoluteScheduleValue(startDate: startDate, endDate: endDate, value: LoopQuantity(unit: .milligramsPerDeciliter, doubleValue: 40))]
 
         let statuses = [carbEntries[1]].map(
             to: inputICE,
@@ -646,13 +645,13 @@ class CarbMathTests: XCTestCase {
             absorptionModel: PiecewiseLinearAbsorption()
         )
 
-        let unit = HKUnit.gram()
+        let unit = LoopUnit.gram
 
         XCTAssertEqual(output.count, carbsOnBoard.count)
 
         for (expected, calculated) in zip(output, carbsOnBoard) {
             XCTAssertEqual(expected.startDate, calculated.startDate)
-            XCTAssertEqual(expected.quantity.doubleValue(for: HKUnit.gram()), calculated.quantity.doubleValue(for: HKUnit.gram()), accuracy: Double(Float.ulpOfOne))
+            XCTAssertEqual(expected.quantity.doubleValue(for: unit), calculated.quantity.doubleValue(for: unit), accuracy: Double(Float.ulpOfOne))
         }
 
         XCTAssertEqual(carbsOnBoard.first!.quantity.doubleValue(for: unit), 0, accuracy: 1)
@@ -669,7 +668,7 @@ class CarbMathTests: XCTestCase {
         let endDate = inputICE.last!.startDate
 
         let carbRatio = [AbsoluteScheduleValue(startDate: startDate, endDate: endDate, value: 8.0)]
-        let isf = [AbsoluteScheduleValue(startDate: startDate, endDate: endDate, value: HKQuantity(unit: .milligramsPerDeciliter, doubleValue: 40))]
+        let isf = [AbsoluteScheduleValue(startDate: startDate, endDate: endDate, value: LoopQuantity(unit: .milligramsPerDeciliter, doubleValue: 40))]
 
         let statuses = [carbEntries[0]].map(
             to: inputICE,
@@ -685,7 +684,7 @@ class CarbMathTests: XCTestCase {
         XCTAssertEqual(statuses[0].absorption!.estimatedTimeRemaining, 3326, accuracy: 1)
 
         let absorption = statuses[0].absorption!
-        let unit = HKUnit.gram()
+        let unit = LoopUnit.gram
 
         XCTAssertEqual(absorption.observed.doubleValue(for: unit), 18, accuracy: Double(Float.ulpOfOne))
 
@@ -699,7 +698,7 @@ class CarbMathTests: XCTestCase {
 
         for (expected, calculated) in zip(output, carbsOnBoard) {
             XCTAssertEqual(expected.startDate, calculated.startDate)
-            XCTAssertEqual(expected.quantity.doubleValue(for: HKUnit.gram()), calculated.quantity.doubleValue(for: HKUnit.gram()), accuracy: Double(Float.ulpOfOne))
+            XCTAssertEqual(expected.quantity.doubleValue(for: unit), calculated.quantity.doubleValue(for: unit), accuracy: Double(Float.ulpOfOne))
         }
 
         XCTAssertEqual(carbsOnBoard.first!.quantity.doubleValue(for: unit), 0, accuracy: 1)
@@ -721,7 +720,7 @@ class CarbMathTests: XCTestCase {
             AbsoluteScheduleValue(startDate: startDate, endDate: changeDate, value: 8.0),
             AbsoluteScheduleValue(startDate: changeDate, endDate: endDate, value: 9.0)
         ]
-        let isf = [AbsoluteScheduleValue(startDate: startDate, endDate: endDate, value: HKQuantity(unit: .milligramsPerDeciliter, doubleValue: 40))]
+        let isf = [AbsoluteScheduleValue(startDate: startDate, endDate: endDate, value: LoopQuantity(unit: .milligramsPerDeciliter, doubleValue: 40))]
 
         let statuses = carbEntries.map(
             to: inputICE,
@@ -738,8 +737,8 @@ class CarbMathTests: XCTestCase {
         XCTAssertEqual(expected.count, statuses.count)
 
         for (expected, calculated) in zip(expected, statuses) {
-            XCTAssertEqual(expected.0, calculated.absorption?.observed.doubleValue(for: HKUnit.gram()))
-            XCTAssertEqual(expected.1, calculated.absorption?.estimatedTimeRemaining)
+            XCTAssertEqual(expected.0, calculated.absorption!.observed.doubleValue(for: LoopUnit.gram), accuracy: Double(Float.ulpOfOne))
+            XCTAssertEqual(expected.1, calculated.absorption!.estimatedTimeRemaining, accuracy: Double(Float.ulpOfOne))
         }
     }
 }

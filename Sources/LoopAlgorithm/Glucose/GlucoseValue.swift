@@ -5,9 +5,7 @@
 //  Copyright © 2016 Nathan Racklyeft. All rights reserved.
 //
 
-
-import HealthKit
-
+import Foundation
 
 public protocol GlucoseValue: SampleValue {
 }
@@ -15,9 +13,9 @@ public protocol GlucoseValue: SampleValue {
 public struct SimpleGlucoseValue: Equatable, GlucoseValue {
     public let startDate: Date
     public let endDate: Date
-    public let quantity: HKQuantity
+    public let quantity: LoopQuantity
 
-    public init(startDate: Date, endDate: Date? = nil, quantity: HKQuantity) {
+    public init(startDate: Date, endDate: Date? = nil, quantity: LoopQuantity) {
         self.startDate = startDate
         self.endDate = endDate ?? startDate
         self.quantity = quantity
@@ -35,7 +33,7 @@ extension SimpleGlucoseValue: Codable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         self.startDate = try container.decode(Date.self, forKey: .startDate)
         self.endDate = try container.decodeIfPresent(Date.self, forKey: .endDate) ?? self.startDate
-        self.quantity = HKQuantity(unit: HKUnit(from: try container.decode(String.self, forKey: .quantityUnit)),
+        self.quantity = LoopQuantity(unit: LoopUnit(from: try container.decode(String.self, forKey: .quantityUnit)),
                                    doubleValue: try container.decode(Double.self, forKey: .quantity))
     }
 
@@ -46,7 +44,7 @@ extension SimpleGlucoseValue: Codable {
             try container.encode(endDate, forKey: .endDate)
         }
         try container.encode(quantity.doubleValue(for: .milligramsPerDeciliter), forKey: .quantity)
-        try container.encode(HKUnit.milligramsPerDeciliter.unitString, forKey: .quantityUnit)
+        try container.encode(LoopUnit.milligramsPerDeciliter.unitString, forKey: .quantityUnit)
     }
 
     private enum CodingKeys: String, CodingKey {
@@ -59,9 +57,9 @@ extension SimpleGlucoseValue: Codable {
 
 public struct PredictedGlucoseValue: Equatable, GlucoseValue {
     public let startDate: Date
-    public let quantity: HKQuantity
+    public let quantity: LoopQuantity
 
-    public init(startDate: Date, quantity: HKQuantity) {
+    public init(startDate: Date, quantity: LoopQuantity) {
         self.startDate = startDate
         self.quantity = quantity
     }
@@ -71,7 +69,7 @@ extension PredictedGlucoseValue: Codable {
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         self.startDate = try container.decode(Date.self, forKey: .startDate)
-        self.quantity = HKQuantity(unit: HKUnit(from: try container.decode(String.self, forKey: .quantityUnit)),
+        self.quantity = LoopQuantity(unit: LoopUnit(from: try container.decode(String.self, forKey: .quantityUnit)),
                                    doubleValue: try container.decode(Double.self, forKey: .quantity))
     }
 
@@ -79,7 +77,7 @@ extension PredictedGlucoseValue: Codable {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(startDate, forKey: .startDate)
         try container.encode(quantity.doubleValue(for: .milligramsPerDeciliter), forKey: .quantity)
-        try container.encode(HKUnit.milligramsPerDeciliter.unitString, forKey: .quantityUnit)
+        try container.encode(LoopUnit.milligramsPerDeciliter.unitString, forKey: .quantityUnit)
     }
 
     private enum CodingKeys: String, CodingKey {
@@ -88,5 +86,3 @@ extension PredictedGlucoseValue: Codable {
         case quantityUnit
     }
 }
-
-extension HKQuantitySample: GlucoseValue { }

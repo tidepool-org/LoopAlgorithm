@@ -7,7 +7,6 @@
 //
 
 import Foundation
-import HealthKit
 
 public struct GlucoseMath {
     public static let momentumDataInterval: TimeInterval = .minutes(15)
@@ -84,10 +83,10 @@ extension BidirectionalCollection where Element: GlucoseSampleValue, Index == In
     public func linearMomentumEffect(
         duration: TimeInterval = GlucoseMath.momentumDuration,
         delta: TimeInterval = GlucoseMath.defaultDelta,
-        velocityMaximum: HKQuantity? = nil
+        velocityMaximum: LoopQuantity? = nil
     ) -> [GlucoseEffect] {
 
-        let velocityMax = velocityMaximum ?? HKQuantity(unit: HKUnit.milligramsPerDeciliter.unitDivided(by: .minute()), doubleValue: 4.0)
+        let velocityMax = velocityMaximum ?? LoopQuantity(unit: .milligramsPerDeciliterPerMinute, doubleValue: 4.0)
 
         guard
             self.count > 2,  // Linear regression isn't much use without 3 or more entries.
@@ -100,7 +99,7 @@ extension BidirectionalCollection where Element: GlucoseSampleValue, Index == In
         }
 
         /// Choose a unit to use during raw value calculation
-        let unit = HKUnit.milligramsPerDeciliter
+        let unit = LoopUnit.milligramsPerDeciliter
 
         let (slope: slope, intercept: _) = self.map { (
             x: $0.startDate.timeIntervalSince(firstSample.startDate),
@@ -111,14 +110,14 @@ extension BidirectionalCollection where Element: GlucoseSampleValue, Index == In
             return []
         }
 
-        let limitedSlope = Swift.min(slope, velocityMax.doubleValue(for: unit.unitDivided(by: .second())))
+        let limitedSlope = Swift.min(slope, velocityMax.doubleValue(for: .milligramsPerDeciliterPerSecond))
 
         var date = startDate
         var values = [GlucoseEffect]()
 
         repeat {
             let value = Swift.max(0, date.timeIntervalSince(lastSample.startDate)) * limitedSlope
-            let momentumEffect = GlucoseEffect(startDate: date, quantity: HKQuantity(unit: unit, doubleValue: value))
+            let momentumEffect = GlucoseEffect(startDate: date, quantity: LoopQuantity(unit: unit, doubleValue: value))
 
             values.append(momentumEffect)
             date = date.addingTimeInterval(delta)
@@ -149,7 +148,7 @@ extension Collection where Element: GlucoseSampleValue, Index == Int {
     /// - Parameter effects: Glucose effects to be countered, in chronological order
     /// - Returns: An array of velocities describing the change in glucose samples compared to the specified effects
     public func counteractionEffects(to effects: [GlucoseEffect]) -> [GlucoseEffectVelocity] {
-        let mgdL = HKUnit.milligramsPerDeciliter
+        let mgdL = LoopUnit.milligramsPerDeciliter
         let velocityUnit = GlucoseEffectVelocity.perSecondUnit
         var velocities = [GlucoseEffectVelocity]()
 
@@ -219,7 +218,7 @@ extension Collection where Element: GlucoseSampleValue, Index == Int {
             let effectChange = endEffectValue - startEffectValue
             let discrepancy = glucoseChange - effectChange
 
-            let averageVelocity = HKQuantity(unit: velocityUnit, doubleValue: discrepancy / timeInterval)
+            let averageVelocity = LoopQuantity(unit: velocityUnit, doubleValue: discrepancy / timeInterval)
             let effect = GlucoseEffectVelocity(startDate: startGlucose.startDate, endDate: endGlucose.startDate, quantity: averageVelocity)
 
             velocities.append(effect)

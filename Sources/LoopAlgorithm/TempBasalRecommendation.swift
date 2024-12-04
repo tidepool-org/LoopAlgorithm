@@ -7,7 +7,6 @@
 //
 
 import Foundation
-import HealthKit
 
 public struct TempBasalRecommendation: Equatable {
     public var unitsPerHour: Double

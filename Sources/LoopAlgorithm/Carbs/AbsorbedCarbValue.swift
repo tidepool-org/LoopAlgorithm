@@ -6,19 +6,18 @@
 //
 
 import Foundation
-import HealthKit
 
 
 /// A quantity of carbs absorbed over a given date interval
 public struct AbsorbedCarbValue: SampleValue {
     /// The quantity of carbs absorbed
-    public let observed: HKQuantity
+    public let observed: LoopQuantity
     /// The quantity of carbs absorbed, clamped to the original prediction
-    public let clamped: HKQuantity
+    public let clamped: LoopQuantity
     /// The quantity of carbs entered as eaten
-    public let total: HKQuantity
+    public let total: LoopQuantity
     /// The quantity of carbs expected to still absorb
-    public let remaining: HKQuantity
+    public let remaining: LoopQuantity
     /// The dates over which absorption was observed
     public let observedDate: DateInterval
 
@@ -38,16 +37,16 @@ public struct AbsorbedCarbValue: SampleValue {
         return estimatedTimeRemaining > 0
     }
 
-    public var observedProgress: HKQuantity {
-        let gram = HKUnit.gram()
+    public var observedProgress: LoopQuantity {
+        let gram = LoopUnit.gram
         let totalGrams = total.doubleValue(for: gram)
-        let percent = HKUnit.percent()
+        let percent = LoopUnit.percent
 
         guard totalGrams > 0 else {
-            return HKQuantity(unit: percent, doubleValue: 0)
+            return LoopQuantity(unit: percent, doubleValue: 0)
         }
 
-        return HKQuantity(
+        return LoopQuantity(
             unit: percent,
             doubleValue: observed.doubleValue(for: gram) / totalGrams
         )
@@ -55,7 +54,7 @@ public struct AbsorbedCarbValue: SampleValue {
 
     // MARK: SampleValue
 
-    public var quantity: HKQuantity {
+    public var quantity: LoopQuantity {
         return clamped
     }
 
@@ -67,20 +66,20 @@ public struct AbsorbedCarbValue: SampleValue {
 extension AbsorbedCarbValue: Codable {
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        self.observed = HKQuantity(
-            unit: .gram(),
+        self.observed = LoopQuantity(
+            unit: .gram,
             doubleValue: try container.decode(Double.self, forKey: .observed)
         )
-        self.clamped = HKQuantity(
-            unit: .gram(),
+        self.clamped = LoopQuantity(
+            unit: .gram,
             doubleValue: try container.decode(Double.self, forKey: .clamped)
         )
-        self.total = HKQuantity(
-            unit: .gram(),
+        self.total = LoopQuantity(
+            unit: .gram,
             doubleValue: try container.decode(Double.self, forKey: .total)
         )
-        self.remaining = HKQuantity(
-            unit: .gram(),
+        self.remaining = LoopQuantity(
+            unit: .gram,
             doubleValue: try container.decode(Double.self, forKey: .remaining)
         )
 
@@ -95,10 +94,10 @@ extension AbsorbedCarbValue: Codable {
 
     public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
-        try container.encode(observed.doubleValue(for: .gram()), forKey: .observed)
-        try container.encode(clamped.doubleValue(for: .gram()), forKey: .observed)
-        try container.encode(total.doubleValue(for: .gram()), forKey: .observed)
-        try container.encode(remaining.doubleValue(for: .gram()), forKey: .observed)
+        try container.encode(observed.doubleValue(for: .gram), forKey: .observed)
+        try container.encode(clamped.doubleValue(for: .gram), forKey: .observed)
+        try container.encode(total.doubleValue(for: .gram), forKey: .observed)
+        try container.encode(remaining.doubleValue(for: .gram), forKey: .observed)
 
         try container.encode(observedDate.start, forKey: .observedDateStart)
         try container.encode(observedDate.duration, forKey: .observedDateDuration)

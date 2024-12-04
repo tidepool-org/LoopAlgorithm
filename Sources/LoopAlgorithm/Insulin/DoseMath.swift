@@ -7,12 +7,11 @@
 //
 
 import Foundation
-import HealthKit
 
 public enum InsulinCorrection {
     case inRange
-    case aboveRange(min: GlucoseValue, correcting: GlucoseValue, minTarget: HKQuantity, units: Double)
-    case entirelyBelowRange(min: GlucoseValue, minTarget: HKQuantity, units: Double)
+    case aboveRange(min: GlucoseValue, correcting: GlucoseValue, minTarget: LoopQuantity, units: Double)
+    case entirelyBelowRange(min: GlucoseValue, minTarget: LoopQuantity, units: Double)
     case suspend(min: GlucoseValue)
 }
 
@@ -150,7 +149,7 @@ private func targetGlucoseValue(percentEffectDuration: Double, minValue: Double,
     return minValue + slope * (percentEffectDuration - useMinValueUntilPercent)
 }
 
-public typealias GlucoseRangeTimeline = [AbsoluteScheduleValue<ClosedRange<HKQuantity>>]
+public typealias GlucoseRangeTimeline = [AbsoluteScheduleValue<ClosedRange<LoopQuantity>>]
 
 extension Array where Element: GlucoseValue {
 
@@ -167,8 +166,8 @@ extension Array where Element: GlucoseValue {
     func insulinCorrection(
         to correctionRange: GlucoseRangeTimeline,
         at date: Date,
-        suspendThreshold: HKQuantity,
-        insulinSensitivity: [AbsoluteScheduleValue<HKQuantity>],
+        suspendThreshold: LoopQuantity,
+        insulinSensitivity: [AbsoluteScheduleValue<LoopQuantity>],
         model: InsulinModel
     ) -> InsulinCorrection {
         var minGlucose: GlucoseValue!
@@ -177,7 +176,7 @@ extension Array where Element: GlucoseValue {
         var minCorrectionUnits: Double?
         var effectedSensitivityAtMinGlucose: Double?
 
-        let unit = HKUnit.milligramsPerDeciliter
+        let unit = LoopUnit.milligramsPerDeciliter
 
         guard self.count > 0 else {
             preconditionFailure("Unable to compute correction for empty glucose array")

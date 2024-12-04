@@ -7,7 +7,6 @@
 //
 
 import Foundation
-import HealthKit
 
 public enum BolusRecommendationNotice: Equatable {
     case glucoseBelowSuspendThreshold(minGlucose: SimpleGlucoseValue)

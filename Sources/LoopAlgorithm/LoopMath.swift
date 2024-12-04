@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import HealthKit
 
 
 public enum LoopMath {
@@ -116,7 +115,7 @@ public enum LoopMath {
      */
     public static func predictGlucose(startingAt startingGlucose: GlucoseValue, momentum: [GlucoseEffect] = [], effects: [[GlucoseEffect]]) -> [PredictedGlucoseValue] {
         var effectValuesAtDate: [Date: Double] = [:]
-        let unit = HKUnit.milligramsPerDeciliter
+        let unit = LoopUnit.milligramsPerDeciliter
 
         for timeline in effects {
             var previousEffectValue: Double = timeline.first?.quantity.doubleValue(for: unit) ?? 0
@@ -162,7 +161,7 @@ public enum LoopMath {
             if effect.0 > startingGlucose.startDate, let lastValue = prediction.last {
                 let nextValue = PredictedGlucoseValue(
                     startDate: effect.0,
-                    quantity: HKQuantity(unit: unit, doubleValue: effect.1 + lastValue.quantity.doubleValue(for: unit))
+                    quantity: LoopQuantity(unit: unit, doubleValue: effect.1 + lastValue.quantity.doubleValue(for: unit))
                 )
                 return prediction + [nextValue]
             } else {
@@ -185,12 +184,12 @@ extension GlucoseValue {
 
      - returns: An array of glucose effects
      */
-    public func decayEffect(atRate rate: HKQuantity, for duration: TimeInterval, withDelta delta: TimeInterval = 5 * 60) -> [GlucoseEffect] {
+    public func decayEffect(atRate rate: LoopQuantity, for duration: TimeInterval, withDelta delta: TimeInterval = 5 * 60) -> [GlucoseEffect] {
         guard let (startDate, endDate) = LoopMath.simulationDateRangeForSamples([self], duration: duration, delta: delta) else {
             return []
         }
 
-        let glucoseUnit = HKUnit.milligramsPerDeciliter
+        let glucoseUnit = LoopUnit.milligramsPerDeciliter
         let velocityUnit = GlucoseEffectVelocity.perSecondUnit
 
         // The starting rate, which we will decay to 0 over the specified duration
@@ -204,7 +203,7 @@ extension GlucoseValue {
 
         repeat {
             let value = lastValue + (intercept + slope * date.timeIntervalSince(decayStartDate)) * delta
-            values.append(GlucoseEffect(startDate: date, quantity: HKQuantity(unit: glucoseUnit, doubleValue: value)))
+            values.append(GlucoseEffect(startDate: date, quantity: LoopQuantity(unit: glucoseUnit, doubleValue: value)))
             lastValue = value
             date = date.addingTimeInterval(delta)
         } while date < endDate
@@ -255,7 +254,7 @@ extension BidirectionalCollection where Element == GlucoseEffect {
 
         let net = last.quantity.doubleValue(for: .milligramsPerDeciliter) - first.quantity.doubleValue(for: .milligramsPerDeciliter)
 
-        return GlucoseChange(startDate: first.startDate, endDate: last.endDate, quantity: HKQuantity(unit: .milligramsPerDeciliter, doubleValue: net))
+        return GlucoseChange(startDate: first.startDate, endDate: last.endDate, quantity: LoopQuantity(unit: .milligramsPerDeciliter, doubleValue: net))
     }
 }
 
@@ -300,7 +299,7 @@ extension BidirectionalCollection where Element == GlucoseEffectVelocity {
 
             subtracted.append(GlucoseEffect(
                 startDate: effect.endDate,
-                quantity: HKQuantity(
+                quantity: LoopQuantity(
                     unit: .milligramsPerDeciliter,
                     doubleValue: effectValueMatchingOtherEffectInterval - otherEffectChange
                 )
@@ -314,7 +313,7 @@ extension BidirectionalCollection where Element == GlucoseEffectVelocity {
 
             subtracted.append(GlucoseEffect(
                 startDate: effect.endDate,
-                quantity: HKQuantity(
+                quantity: LoopQuantity(
                     unit: .milligramsPerDeciliter,
                     doubleValue: effectValueMatchingOtherEffectInterval
                 )

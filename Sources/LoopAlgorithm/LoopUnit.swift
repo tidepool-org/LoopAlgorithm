@@ -52,13 +52,15 @@ public enum LoopUnit: Sendable, CaseIterable {
              (.second, .second):
             return 1
         case (.milligramsPerDeciliterPerSecond, .milligramsPerDeciliterPerMinute),
-             (.millimolesPerLiterPerSecond, .millimolesPerLiterPerMinute),
-             (.second, .minute),
+             (.millimolesPerLiterPerSecond, .millimolesPerLiterPerMinute):
+            return 60
+        case (.second, .minute),
              (.minute, .hour):
             return 1/60
         case (.milligramsPerDeciliterPerMinute, .milligramsPerDeciliterPerSecond),
-             (.millimolesPerLiterPerMinute, .millimolesPerLiterPerSecond),
-             (.minute, .second),
+             (.millimolesPerLiterPerMinute, .millimolesPerLiterPerSecond):
+            return 1/60
+        case (.minute, .second),
              (.hour, .minute):
             return 60
         case (.second, .hour):
@@ -70,19 +72,19 @@ public enum LoopUnit: Sendable, CaseIterable {
              (.milligramsPerDeciliterPerMinute, .millimolesPerLiterPerMinute),
              (.milligramsPerDeciliterPerInternationalUnit, .millimolesPerLiterPerInternationalUnit):
             return 1/UnitMolarMassBloodGlucoseDivisible
+        case (.milligramsPerDeciliterPerSecond, .millimolesPerLiterPerMinute):
+            return 1/UnitMolarMassBloodGlucoseDivisible / 60
+        case (.milligramsPerDeciliterPerMinute, .millimolesPerLiterPerSecond):
+            return 1/UnitMolarMassBloodGlucoseDivisible * 60
         case (.millimolesPerLiter, .milligramsPerDeciliter),
              (.millimolesPerLiterPerSecond, .milligramsPerDeciliterPerSecond),
              (.millimolesPerLiterPerMinute, .milligramsPerDeciliterPerMinute),
              (.millimolesPerLiterPerInternationalUnit, .milligramsPerDeciliterPerInternationalUnit):
             return UnitMolarMassBloodGlucoseDivisible
-        case (.milligramsPerDeciliterPerMinute, .millimolesPerLiterPerSecond):
-            return 1/UnitMolarMassBloodGlucoseDivisible * 60
-        case (.milligramsPerDeciliterPerSecond, .millimolesPerLiterPerMinute):
-            return 1/UnitMolarMassBloodGlucoseDivisible / 60
-        case (.millimolesPerLiterPerMinute, .milligramsPerDeciliterPerSecond):
-            return UnitMolarMassBloodGlucoseDivisible * 60
         case (.millimolesPerLiterPerSecond, .milligramsPerDeciliterPerMinute):
             return UnitMolarMassBloodGlucoseDivisible / 60
+        case (.millimolesPerLiterPerMinute, .milligramsPerDeciliterPerSecond):
+            return UnitMolarMassBloodGlucoseDivisible * 60
         case (.gram, _),
              (.gramsPerUnit, _),
              (.internationalUnit, _),

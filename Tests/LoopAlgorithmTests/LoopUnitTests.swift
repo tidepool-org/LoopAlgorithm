@@ -148,13 +148,13 @@ class LoopUnitTests: XCTestCase {
         
         unit1 = LoopUnit.milligramsPerDeciliterPerSecond
         unit2 = LoopUnit.milligramsPerDeciliterPerMinute
-        XCTAssertEqual(unit1.conversionFactor(toUnit: unit2), 1/60)
-        XCTAssertEqual(unit2.conversionFactor(toUnit: unit1), 60)
+        XCTAssertEqual(unit1.conversionFactor(toUnit: unit2), 60)
+        XCTAssertEqual(unit2.conversionFactor(toUnit: unit1), 1/60)
         
         unit1 = LoopUnit.millimolesPerLiterPerSecond
         unit2 = LoopUnit.millimolesPerLiterPerMinute
-        XCTAssertEqual(unit1.conversionFactor(toUnit: unit2), 1/60)
-        XCTAssertEqual(unit2.conversionFactor(toUnit: unit1), 60)
+        XCTAssertEqual(unit1.conversionFactor(toUnit: unit2), 60)
+        XCTAssertEqual(unit2.conversionFactor(toUnit: unit1), 1/60)
         
         unit1 = LoopUnit.minute
         unit2 = LoopUnit.hour

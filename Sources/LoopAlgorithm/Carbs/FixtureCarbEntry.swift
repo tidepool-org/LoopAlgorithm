@@ -12,6 +12,18 @@ public struct FixtureCarbEntry: CarbEntry {
     public var startDate: Date
     public var quantity: LoopQuantity
     public var foodType: String?
+    
+    public init(
+        absorptionTime: TimeInterval?,
+        startDate: Date,
+        quantity: LoopQuantity,
+        foodType: String? = nil
+    ) {
+        self.absorptionTime = absorptionTime
+        self.startDate = startDate
+        self.quantity = quantity
+        self.foodType = foodType
+    }
 }
 
 extension FixtureCarbEntry: Codable {

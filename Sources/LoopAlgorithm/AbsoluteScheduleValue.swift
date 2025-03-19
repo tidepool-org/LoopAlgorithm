@@ -6,7 +6,7 @@
 
 import Foundation
 
-public struct AbsoluteScheduleValue<T>: TimelineValue {
+public struct AbsoluteScheduleValue<T: Sendable>: TimelineValue, Sendable {
     public var startDate: Date
     public var endDate: Date
     public var value: T

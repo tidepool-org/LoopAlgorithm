@@ -5,7 +5,7 @@
 //  Copyright © 2016 Nathan Racklyeft. All rights reserved.
 //
 
-import CoreData
+import Foundation
 
 public struct FixtureCarbEntry: CarbEntry {
     public var absorptionTime: TimeInterval?

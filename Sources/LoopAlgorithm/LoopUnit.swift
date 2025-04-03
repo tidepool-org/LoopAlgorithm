@@ -154,30 +154,51 @@ public enum LoopUnit: Sendable, CaseIterable {
         }
     }
     
-    public enum GlucoseInterval: Sendable {
-        case minutes
-        case seconds
-    }
-    
-    public func glucose(per interval: GlucoseInterval) -> LoopUnit {
+    public func unitDivided(by unit: LoopUnit) -> LoopUnit? {
         switch self {
         case .milligramsPerDeciliter:
-            switch interval {
-            case .minutes:
+            switch unit {
+            case .minute:
                 return .milligramsPerDeciliterPerMinute
-            case .seconds:
+            case .second:
                 return .milligramsPerDeciliterPerSecond
+            case .internationalUnit:
+                return .milligramsPerDeciliterPerInternationalUnit
+            default:
+                assertionFailure("\(self.localizedShortUnitString) is not divisible by \(unit.localizedShortUnitString)")
+                return nil
             }
-            
-        case.millimolesPerLiter:
-            switch interval {
-            case .minutes:
+        case .millimolesPerLiter:
+            switch unit {
+            case .minute:
                 return .millimolesPerLiterPerMinute
-            case .seconds:
+            case .second:
                 return .millimolesPerLiterPerSecond
+            case .internationalUnit:
+                return .millimolesPerLiterPerInternationalUnit
+            default:
+                assertionFailure("\(self.localizedShortUnitString) is not divisible by \(unit.localizedShortUnitString)")
+                return nil
+            }
+        case .internationalUnit:
+            switch unit {
+            case .hour:
+                return .internationalUnitsPerHour
+            default:
+                assertionFailure("\(self.localizedShortUnitString) is not divisible by \(unit.localizedShortUnitString)")
+                return nil
+            }
+        case .gram:
+            switch unit {
+            case .internationalUnit:
+                return .gramsPerUnit
+            default:
+                assertionFailure("\(self.localizedShortUnitString) is not divisible by \(unit.localizedShortUnitString)")
+                return nil
             }
         default:
-            fatalError("\(self.unitString) is not a glucoseUnit")
+            assertionFailure("\(self.localizedShortUnitString) is not divisible by \(unit.localizedShortUnitString)")
+            return nil
         }
     }
 }

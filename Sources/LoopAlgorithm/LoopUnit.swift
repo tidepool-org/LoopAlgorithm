@@ -154,7 +154,7 @@ public enum LoopUnit: Sendable, CaseIterable {
         }
     }
     
-    public func unitDivided(by unit: LoopUnit) -> LoopUnit? {
+    public func unitDivided(by unit: LoopUnit) -> LoopUnit {
         switch self {
         case .milligramsPerDeciliter:
             switch unit {
@@ -165,8 +165,7 @@ public enum LoopUnit: Sendable, CaseIterable {
             case .internationalUnit:
                 return .milligramsPerDeciliterPerInternationalUnit
             default:
-                assertionFailure("\(self.localizedShortUnitString) is not divisible by \(unit.localizedShortUnitString)")
-                return nil
+                fatalError("\(self.localizedShortUnitString) is not divisible by \(unit.localizedShortUnitString)")
             }
         case .millimolesPerLiter:
             switch unit {
@@ -177,28 +176,24 @@ public enum LoopUnit: Sendable, CaseIterable {
             case .internationalUnit:
                 return .millimolesPerLiterPerInternationalUnit
             default:
-                assertionFailure("\(self.localizedShortUnitString) is not divisible by \(unit.localizedShortUnitString)")
-                return nil
+                fatalError("\(self.localizedShortUnitString) is not divisible by \(unit.localizedShortUnitString)")
             }
         case .internationalUnit:
             switch unit {
             case .hour:
                 return .internationalUnitsPerHour
             default:
-                assertionFailure("\(self.localizedShortUnitString) is not divisible by \(unit.localizedShortUnitString)")
-                return nil
+                fatalError("\(self.localizedShortUnitString) is not divisible by \(unit.localizedShortUnitString)")
             }
         case .gram:
             switch unit {
             case .internationalUnit:
                 return .gramsPerUnit
             default:
-                assertionFailure("\(self.localizedShortUnitString) is not divisible by \(unit.localizedShortUnitString)")
-                return nil
+                fatalError("\(self.localizedShortUnitString) is not divisible by \(unit.localizedShortUnitString)")
             }
         default:
-            assertionFailure("\(self.localizedShortUnitString) is not divisible by \(unit.localizedShortUnitString)")
-            return nil
+            fatalError("\(self.localizedShortUnitString) is not divisible by \(unit.localizedShortUnitString)")
         }
     }
 }

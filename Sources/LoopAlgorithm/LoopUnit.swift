@@ -157,6 +157,7 @@ public enum LoopUnit: Sendable, CaseIterable {
     public enum GlucoseInterval: Sendable {
         case minutes
         case seconds
+        case internationalUnit
     }
     
     public func glucose(per interval: GlucoseInterval) -> LoopUnit {
@@ -167,6 +168,8 @@ public enum LoopUnit: Sendable, CaseIterable {
                 return .milligramsPerDeciliterPerMinute
             case .seconds:
                 return .milligramsPerDeciliterPerSecond
+            case .internationalUnit:
+                return .milligramsPerDeciliterPerInternationalUnit
             }
             
         case.millimolesPerLiter:
@@ -175,6 +178,8 @@ public enum LoopUnit: Sendable, CaseIterable {
                 return .millimolesPerLiterPerMinute
             case .seconds:
                 return .millimolesPerLiterPerSecond
+            case .internationalUnit:
+                return .millimolesPerLiterPerInternationalUnit
             }
         default:
             fatalError("\(self.unitString) is not a glucoseUnit")

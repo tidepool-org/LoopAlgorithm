@@ -375,7 +375,7 @@ public struct LoopAlgorithm {
         activeInsulin: Double,
         maxBolus: Double,
         maxBasalRate: Double
-    ) -> TempBasalRecommendation? {
+    ) -> TempBasalRecommendation {
 
         var maxBasalRate = maxBasalRate
 
@@ -408,7 +408,7 @@ public struct LoopAlgorithm {
         activeInsulin: Double,
         maxBolus: Double,
         maxBasalRate: Double
-    ) -> AutomaticDoseRecommendation? {
+    ) -> AutomaticDoseRecommendation {
 
 
         let deliveryHeadroom = max(0, maxBolus * 2.0 - activeInsulin)
@@ -421,7 +421,7 @@ public struct LoopAlgorithm {
             deliveryMax = 0
         }
 
-        let temp: TempBasalRecommendation? = correction.asTempBasal(
+        let temp: TempBasalRecommendation = correction.asTempBasal(
             neutralBasalRate: neutralBasalRate,
             maxBasalRate: neutralBasalRate,
             duration: .minutes(30)
@@ -432,11 +432,7 @@ public struct LoopAlgorithm {
             maxBolusUnits: deliveryMax
         )
 
-        if temp != nil || bolusUnits > 0 {
-            return AutomaticDoseRecommendation(basalAdjustment: temp, bolusUnits: bolusUnits)
-        }
-
-        return nil
+        return AutomaticDoseRecommendation(basalAdjustment: temp, direction: .from(neutral: neutralBasalRate, temp: temp.unitsPerHour), bolusUnits: bolusUnits)
     }
 
     // Computes a manual bolus to correct the given prediction
@@ -583,7 +579,7 @@ public struct LoopAlgorithm {
                     activeInsulin: prediction.activeInsulin!,
                     maxBolus: input.maxBolus,
                     maxBasalRate: input.maxBasalRate)
-                result = .success(.init(automatic: AutomaticDoseRecommendation(basalAdjustment: recommendation)))
+                result = .success(.init(automatic: AutomaticDoseRecommendation(basalAdjustment: recommendation, direction: .from(neutral: scheduledBasalRate, temp: recommendation.unitsPerHour))))
             }
         } catch {
             result = .failure(error)

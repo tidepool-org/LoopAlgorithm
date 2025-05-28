@@ -10,28 +10,10 @@ import Foundation
 
 public struct TempBasalRecommendation: Equatable {
     
-    public enum Direction: Codable {
-        case decrease
-        case neutral
-        case increase
-    }
-    
-    public var neutralUnitsPerHour: Double
     public var unitsPerHour: Double
     public let duration: TimeInterval
-    
-    public var direction: Direction {
-        if unitsPerHour > neutralUnitsPerHour {
-            return .increase
-        } else if unitsPerHour < neutralUnitsPerHour {
-            return .decrease
-        } else {
-            return .neutral
-        }
-    }
 
-    public init(neutralUnitsPerHour: Double, unitsPerHour: Double, duration: TimeInterval) {
-        self.neutralUnitsPerHour = neutralUnitsPerHour
+    public init(unitsPerHour: Double, duration: TimeInterval) {
         self.unitsPerHour = unitsPerHour
         self.duration = duration
     }

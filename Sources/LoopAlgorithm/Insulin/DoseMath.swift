@@ -55,6 +55,7 @@ extension InsulinCorrection {
         rate = rateRounder?(rate) ?? rate
 
         return TempBasalRecommendation(
+            neutralUnitsPerHour: neutralBasalRate,
             unitsPerHour: rate,
             duration: duration
         )

@@ -9,7 +9,6 @@
 import Foundation
 
 public struct TempBasalRecommendation: Equatable {
-    
     public var unitsPerHour: Double
     public let duration: TimeInterval
 

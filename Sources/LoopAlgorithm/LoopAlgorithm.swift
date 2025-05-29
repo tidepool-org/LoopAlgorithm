@@ -431,8 +431,8 @@ public struct LoopAlgorithm {
             partialApplicationFactor: applicationFactor,
             maxBolusUnits: deliveryMax
         )
-
-        return AutomaticDoseRecommendation(basalAdjustment: temp, direction: .from(neutral: neutralBasalRate, temp: temp.unitsPerHour), bolusUnits: bolusUnits)
+        
+        return AutomaticDoseRecommendation(basalAdjustment: temp, direction: .from(correction: correction), bolusUnits: bolusUnits)
     }
 
     // Computes a manual bolus to correct the given prediction
@@ -579,7 +579,7 @@ public struct LoopAlgorithm {
                     activeInsulin: prediction.activeInsulin!,
                     maxBolus: input.maxBolus,
                     maxBasalRate: input.maxBasalRate)
-                result = .success(.init(automatic: AutomaticDoseRecommendation(basalAdjustment: recommendation, direction: .from(neutral: scheduledBasalRate, temp: recommendation.unitsPerHour))))
+                result = .success(.init(automatic: AutomaticDoseRecommendation(basalAdjustment: recommendation, direction: .from(correction: correction))))
             }
         } catch {
             result = .failure(error)

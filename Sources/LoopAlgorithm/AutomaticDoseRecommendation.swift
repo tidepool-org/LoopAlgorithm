@@ -15,22 +15,25 @@ public struct AutomaticDoseRecommendation: Equatable {
         case neutral
         case increase
         
-        static func from(neutral: Double, temp: Double) -> Self {
-            if temp > neutral {
-                return .increase
-            } else if temp < neutral {
-                return .decrease
-            } else {
+        static func from(correction: InsulinCorrection) -> Self? {
+            switch correction {
+            case .inRange:
                 return .neutral
+            case .aboveRange:
+                return .increase
+            case .entirelyBelowRange:
+                return .decrease
+            case .suspend:
+                return nil
             }
         }
     }
     
     public var basalAdjustment: TempBasalRecommendation
     public var bolusUnits: Double?
-    public var direction: Direction
+    public var direction: Direction?
 
-    public init(basalAdjustment: TempBasalRecommendation, direction: Direction, bolusUnits: Double? = nil) {
+    public init(basalAdjustment: TempBasalRecommendation, direction: Direction?, bolusUnits: Double? = nil) {
         self.basalAdjustment = basalAdjustment
         self.direction = direction
         self.bolusUnits = bolusUnits

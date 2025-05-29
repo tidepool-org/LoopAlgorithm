@@ -4,6 +4,7 @@
       "duration" : 1800,
       "unitsPerHour" : 0
     },
+    "direction": "decrease",
     "bolusUnits" : 0
   }
 }

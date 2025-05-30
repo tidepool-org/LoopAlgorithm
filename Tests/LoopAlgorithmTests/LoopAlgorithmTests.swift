@@ -143,7 +143,7 @@ final class LoopAlgorithmTests: XCTestCase {
 
         let basalAdjustment = output.recommendation!.automatic!.basalAdjustment
 
-        XCTAssertEqual(basalAdjustment!.unitsPerHour, 5.83, accuracy: 0.01)
+        XCTAssertEqual(basalAdjustment.unitsPerHour, 5.83, accuracy: 0.01)
     }
 
     func testLiveCaptureScenario() {
@@ -259,7 +259,7 @@ final class LoopAlgorithmTests: XCTestCase {
         // Max activeInsulin = 2 x maxBolus = 16U
         input.maxBolus = 8
         var output = LoopAlgorithm.run(input: input)
-        var recommendedRate = output.recommendation!.automatic!.basalAdjustment!.unitsPerHour
+        var recommendedRate = output.recommendation!.automatic!.basalAdjustment.unitsPerHour
         var activeInsulin = output.activeInsulin!
         XCTAssertEqual(activeInsulin, 8.0)
         XCTAssertEqual(recommendedRate, 8.0, accuracy: 0.01)
@@ -267,7 +267,7 @@ final class LoopAlgorithmTests: XCTestCase {
         // Now try with maxBolus of 4; should only recommend scheduled basal (1U/hr), as we're at our max iob
         input.maxBolus = 4
         output = LoopAlgorithm.run(input: input)
-        recommendedRate = output.recommendation!.automatic!.basalAdjustment!.unitsPerHour
+        recommendedRate = output.recommendation!.automatic!.basalAdjustment.unitsPerHour
         activeInsulin = output.activeInsulin!
         XCTAssertEqual(activeInsulin, 8.0)
         XCTAssertEqual(recommendedRate, 1.0, accuracy: 0.01)
@@ -433,14 +433,14 @@ final class LoopAlgorithmTests: XCTestCase {
         var output = LoopAlgorithm.run(input: input)
 
         let basalAdjustment = output.recommendation!.automatic!.basalAdjustment
-        XCTAssertEqual(basalAdjustment!.unitsPerHour, 4.94, accuracy: 0.01)
+        XCTAssertEqual(basalAdjustment.unitsPerHour, 4.94, accuracy: 0.01)
 
         input.doses.append(
             FixtureInsulinDose(
                 deliveryType: .basal,
                 startDate: now,
                 endDate: now.addingTimeInterval(.minutes(30)),
-                volume: basalAdjustment!.unitsPerHour / 2 // 4.94 U/hr = 2.47 U delivery over 30m
+                volume: basalAdjustment.unitsPerHour / 2 // 4.94 U/hr = 2.47 U delivery over 30m
             )
         )
 

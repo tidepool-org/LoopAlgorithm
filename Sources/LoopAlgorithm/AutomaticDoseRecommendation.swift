@@ -9,11 +9,31 @@
 import Foundation
 
 public struct AutomaticDoseRecommendation: Equatable {
-    public var basalAdjustment: TempBasalRecommendation?
+    
+    public enum Direction: String, Codable {
+        case decrease
+        case neutral
+        case increase
+        
+        static func from(correction: InsulinCorrection) -> Self {
+            switch correction {
+            case .inRange:
+                return .neutral
+            case .aboveRange:
+                return .increase
+            case .entirelyBelowRange, .suspend:
+                return .decrease
+            }
+        }
+    }
+    
+    public var basalAdjustment: TempBasalRecommendation
     public var bolusUnits: Double?
+    public var direction: Direction
 
-    public init(basalAdjustment: TempBasalRecommendation?, bolusUnits: Double? = nil) {
+    public init(basalAdjustment: TempBasalRecommendation, direction: Direction, bolusUnits: Double? = nil) {
         self.basalAdjustment = basalAdjustment
+        self.direction = direction
         self.bolusUnits = bolusUnits
     }
 }

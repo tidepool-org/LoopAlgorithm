@@ -232,7 +232,7 @@ extension Array where Element: GlucoseValue {
                 let end = Swift.min(prediction.startDate, segment.endDate).timeIntervalSince(date)
                 let percentEffected = model.percentEffectRemaining(at: start) - model.percentEffectRemaining(at: end)
                 isfEnd = end
-                return percentEffected * segment.value.doubleValue(for: unit)
+                return partialResult + percentEffected * segment.value.doubleValue(for: unit)
             }
 
             guard let isfEnd, isfEnd >= prediction.startDate.timeIntervalSince(date) else {

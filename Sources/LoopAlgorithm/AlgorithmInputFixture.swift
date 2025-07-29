@@ -197,3 +197,62 @@ extension AlgorithmInputFixture: Codable {
     }
 }
 
+extension AlgorithmInputFixture {
+    static public func printFixture(_ input: any AlgorithmInput) {
+        let fixture = AlgorithmInputFixture(
+            predictionStart: input.predictionStart,
+            glucoseHistory: input.glucoseHistory.map(\.asFixtureGlucoseSample),
+            doses: input.doses.map(\.asFixtureInsulinDose),
+            carbEntries: input.carbEntries.map(\.asFixtureCarbEntry),
+            basal: input.basal,
+            sensitivity: input.sensitivity,
+            carbRatio: input.carbRatio,
+            target: input.target,
+            suspendThreshold: input.suspendThreshold,
+            maxBolus: input.maxBolus,
+            maxBasalRate: input.maxBasalRate,
+            useIntegralRetrospectiveCorrection: input.useIntegralRetrospectiveCorrection,
+            useMidAbsorptionISF: input.useMidAbsorptionISF,
+            includePositiveVelocityAndRC: input.includePositiveVelocityAndRC,
+            carbAbsorptionModel: input.carbAbsorptionModel,
+            recommendationInsulinType: .novolog,
+            recommendationType: input.recommendationType,
+            automaticBolusApplicationFactor: input.automaticBolusApplicationFactor
+        )
+
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
+        encoder.dateEncodingStrategy = .iso8601
+
+        do {
+            let encoded = try encoder.encode(fixture)
+            print(String(data: encoded , encoding: .utf8)!)
+        } catch {
+            print("Error encoding fixture: \(error)")
+        }
+    }
+}
+
+extension GlucoseSampleValue {
+    var asFixtureGlucoseSample: FixtureGlucoseSample {
+        return .init(startDate: startDate, quantity: quantity)
+    }
+}
+
+extension InsulinDose {
+    var asFixtureInsulinDose: FixtureInsulinDose {
+        return .init(deliveryType: deliveryType, startDate: startDate, endDate: endDate, volume: volume)
+    }
+}
+
+extension CarbEntry {
+    var asFixtureCarbEntry: FixtureCarbEntry {
+        return FixtureCarbEntry(
+            absorptionTime: absorptionTime,
+            startDate: startDate,
+            quantity: quantity,
+            foodType: nil
+        )
+    }
+}
+

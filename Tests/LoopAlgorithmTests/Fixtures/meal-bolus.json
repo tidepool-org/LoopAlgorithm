@@ -1,0 +1,192 @@
+{
+  "automaticBolusApplicationFactor" : 0.4,
+  "basal" : [
+    {
+      "endDate" : "2025-07-29T05:00:00Z",
+      "startDate" : "2025-07-28T20:00:00Z",
+      "value" : 0.85
+    },
+    {
+      "endDate" : "2025-07-29T14:49:56Z",
+      "startDate" : "2025-07-29T05:00:00Z",
+      "value" : 1
+    },
+    {
+      "endDate" : "2025-07-29T16:12:36Z",
+      "startDate" : "2025-07-29T14:49:56Z",
+      "value" : 1
+    },
+    {
+      "endDate" : "2025-07-29T16:12:44Z",
+      "startDate" : "2025-07-29T16:12:36Z",
+      "value" : 1
+    },
+    {
+      "endDate" : "2025-07-29T16:39:30Z",
+      "startDate" : "2025-07-29T16:12:44Z",
+      "value" : 1
+    }
+  ],
+  "carbEntries" : [
+    {
+      "absorptionTime" : 10800,
+      "date" : "2025-07-29T16:12:48Z",
+      "grams" : 20
+    }
+  ],
+  "carbRatio" : [
+    {
+      "endDate" : "2025-07-29T05:00:00Z",
+      "startDate" : "2025-07-29T04:11:52Z",
+      "value" : 10
+    },
+    {
+      "endDate" : "2025-07-29T14:49:56Z",
+      "startDate" : "2025-07-29T05:00:00Z",
+      "value" : 10
+    },
+    {
+      "endDate" : "2025-07-29T16:12:36Z",
+      "startDate" : "2025-07-29T14:49:56Z",
+      "value" : 10
+    },
+    {
+      "endDate" : "2025-07-29T16:12:44Z",
+      "startDate" : "2025-07-29T16:12:36Z",
+      "value" : 10
+    },
+    {
+      "endDate" : "2025-07-29T18:12:44Z",
+      "startDate" : "2025-07-29T16:12:44Z",
+      "value" : 10
+    },
+    {
+      "endDate" : "2025-07-29T22:25:00Z",
+      "startDate" : "2025-07-29T18:12:44Z",
+      "value" : 10
+    }
+  ],
+  "doses" : [
+    {
+      "endDate" : "2025-07-29T05:00:00Z",
+      "startDate" : "2025-07-28T20:00:00Z",
+      "type" : "basal",
+      "volume" : 7.65
+    },
+    {
+      "endDate" : "2025-07-29T14:49:01Z",
+      "startDate" : "2025-07-29T05:00:00Z",
+      "type" : "basal",
+      "volume" : 9.8
+    },
+    {
+      "endDate" : "2025-07-29T15:07:36Z",
+      "startDate" : "2025-07-29T14:49:01Z",
+      "type" : "basal",
+      "volume" : 0.3
+    },
+    {
+      "endDate" : "2025-07-29T15:57:58Z",
+      "startDate" : "2025-07-29T15:07:36Z",
+      "type" : "basal",
+      "volume" : 0.85
+    },
+    {
+      "endDate" : "2025-07-29T16:01:05Z",
+      "startDate" : "2025-07-29T15:57:58Z",
+      "type" : "basal",
+      "volume" : 0.05
+    },
+    {
+      "endDate" : "2025-07-29T16:07:02Z",
+      "startDate" : "2025-07-29T16:01:05Z",
+      "type" : "basal",
+      "volume" : 0.1
+    },
+    {
+      "endDate" : "2025-07-29T16:09:30Z",
+      "startDate" : "2025-07-29T16:07:02Z",
+      "type" : "basal",
+      "volume" : 0.04098938193586137
+    },
+    {
+      "endDate" : "2025-07-29T16:39:30Z",
+      "startDate" : "2025-07-29T16:09:30Z",
+      "type" : "basal",
+      "volume" : 0
+    }
+  ],
+  "glucoseHistory" : [
+    {
+      "date" : "2025-07-29T14:49:01Z",
+      "value" : 110
+    },
+    {
+      "date" : "2025-07-29T14:54:01Z",
+      "value" : 112
+    },
+    {
+      "date" : "2025-07-29T14:59:01Z",
+      "value" : 113
+    },
+    {
+      "date" : "2025-07-29T15:04:37Z",
+      "value" : 115
+    },
+    {
+      "date" : "2025-07-29T15:07:36Z",
+      "value" : 116
+    },
+    {
+      "date" : "2025-07-29T15:14:11Z",
+      "value" : 119
+    },
+    {
+      "date" : "2025-07-29T15:57:58Z",
+      "value" : 129
+    },
+    {
+      "date" : "2025-07-29T16:01:05Z",
+      "value" : 129
+    },
+    {
+      "date" : "2025-07-29T16:06:05Z",
+      "value" : 129
+    },
+    {
+      "date" : "2025-07-29T16:07:02Z",
+      "value" : 130
+    },
+    {
+      "date" : "2025-07-29T16:09:30Z",
+      "value" : 130
+    }
+  ],
+  "maxBasalRate" : 5,
+  "maxBolus" : 10,
+  "predictionStart" : "2025-07-29T16:12:52Z",
+  "recommendationInsulinType" : "novolog",
+  "recommendationType" : "manualBolus",
+  "sensitivity" : [
+    {
+      "endDate" : "2025-07-29T16:30:00Z",
+      "startDate" : "2025-07-28T20:00:00Z",
+      "value" : 55
+    },
+    {
+      "endDate" : "2025-07-29T22:50:00Z",
+      "startDate" : "2025-07-29T16:30:00Z",
+      "value" : 65
+    }
+  ],
+  "suspendThreshold" : 75,
+  "target" : [
+    {
+      "endDate" : "2025-07-29T22:25:00Z",
+      "lowerBound" : 140,
+      "startDate" : "2025-07-29T16:12:44Z",
+      "upperBound" : 160
+    }
+  ],
+  "useMidAbsorptionISF" : true
+}

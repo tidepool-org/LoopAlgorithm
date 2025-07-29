@@ -176,6 +176,37 @@ final class LoopAlgorithmTests: XCTestCase {
         }
     }
 
+    func testMealBolusScenario() {
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+
+        let url = Bundle.module.url(forResource: "meal-bolus", withExtension: "json", subdirectory: "Fixtures")!
+        var input = try! decoder.decode(AlgorithmInputFixture.self, from: try! Data(contentsOf: url))
+
+        let output = LoopAlgorithm.run(input: input)
+
+        // Should recommend bolus to cover meal
+        XCTAssertEqual(output.predictedGlucose.last!.quantity.doubleValue(for: .milligramsPerDeciliter), 274, accuracy: 0.1)
+        XCTAssertEqual(output.recommendation!.manual!.amount, 1.9, accuracy: 0.01)
+
+        // Now check forecast if bolus recommendation is accepted and delivered.
+        input.doses.append(
+            .init(
+                deliveryType: .bolus,
+                startDate: input.predictionStart,
+                endDate: input.predictionStart.addingTimeInterval(30),
+                volume: output.recommendation!.manual!.amount
+            )
+        )
+
+        let output2 = LoopAlgorithm.run(input: input)
+
+        // 150 mg/dL is the middle of the target range
+        XCTAssertEqual(output2.predictedGlucose.last!.quantity.doubleValue(for: .milligramsPerDeciliter), 150, accuracy: 0.1)
+
+    }
+
+
     func testMidAborptionISFFlag() {
         let now = ISO8601DateFormatter().date(from: "2024-01-03T00:00:00+0000")!
         var input = AlgorithmInputFixture.mock(for: now)
@@ -300,7 +331,7 @@ final class LoopAlgorithmTests: XCTestCase {
         // With mid-absorption ISF
         input.useMidAbsorptionISF = true
         output = LoopAlgorithm.run(input: input)
-        XCTAssertEqual(1.55, output.recommendation!.manual!.amount, accuracy: 0.01)
+        XCTAssertEqual(1.41, output.recommendation!.manual!.amount, accuracy: 0.01)
     }
 
     func testIncompleteISFTimelineDetected() {

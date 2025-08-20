@@ -38,4 +38,12 @@ public struct AutomaticDoseRecommendation: Equatable {
     }
 }
 
-extension AutomaticDoseRecommendation: Codable {}
+extension AutomaticDoseRecommendation: Codable {
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        // Provide default TempBasalRecommendation if basalAdjustment is missing
+        self.basalAdjustment = try container.decodeIfPresent(TempBasalRecommendation.self, forKey: .basalAdjustment) ?? TempBasalRecommendation(unitsPerHour: 0, duration: 0)
+        self.bolusUnits = try container.decodeIfPresent(Double.self, forKey: .bolusUnits)
+        self.direction = try container.decode(Direction.self, forKey: .direction)
+    }
+}

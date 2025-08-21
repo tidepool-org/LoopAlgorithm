@@ -418,8 +418,12 @@ extension Collection where Element == BasalRelativeDose {
                 return value + isfSegments.reduce(0, { partialResult, segment in
                     let start = Swift.max(lastDate, segment.startDate)
                     let end = Swift.min(date, segment.endDate)
-                    let effect = dose.glucoseEffect(during: DateInterval(start: start, end: end), insulinSensitivity: segment.value.doubleValue(for: unit), delta: delta)
-                    return partialResult + effect
+                    if start != end {
+                        let effect = dose.glucoseEffect(during: DateInterval(start: start, end: end), insulinSensitivity: segment.value.doubleValue(for: unit), delta: delta)
+                        return partialResult + effect
+                    } else {
+                        return partialResult
+                    }
                 })
             }
 

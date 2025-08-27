@@ -15,7 +15,7 @@ public struct CarbMath {
     public static let defaultEffectDelay: TimeInterval = .minutes(10)
 }
 
-public enum CarbAbsorptionModel {
+public enum CarbAbsorptionModel: Codable {
     case linear
     case piecewiseLinear
 

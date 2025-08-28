@@ -44,7 +44,8 @@ public struct LoopPredictionInput<CarbType: CarbEntry, GlucoseType: GlucoseSampl
         carbRatio: [AbsoluteScheduleValue<Double>],
         algorithmEffectsOptions: AlgorithmEffectsOptions,
         useIntegralRetrospectiveCorrection: Bool,
-        includePositiveVelocityAndRC: Bool
+        includePositiveVelocityAndRC: Bool,
+        carbAbsorptionModel: CarbAbsorptionModel
     )
     {
         self.glucoseHistory = glucoseHistory
@@ -56,6 +57,7 @@ public struct LoopPredictionInput<CarbType: CarbEntry, GlucoseType: GlucoseSampl
         self.algorithmEffectsOptions = algorithmEffectsOptions
         self.useIntegralRetrospectiveCorrection = useIntegralRetrospectiveCorrection
         self.includePositiveVelocityAndRC = includePositiveVelocityAndRC
+        self.carbAbsorptionModel = carbAbsorptionModel
     }
 }
 
@@ -78,6 +80,7 @@ extension LoopPredictionInput: Codable where CarbType == FixtureCarbEntry, Gluco
         }
         self.useIntegralRetrospectiveCorrection = try container.decodeIfPresent(Bool.self, forKey: .useIntegralRetrospectiveCorrection) ?? false
         self.includePositiveVelocityAndRC = try container.decodeIfPresent(Bool.self, forKey: .includePositiveVelocityAndRC) ?? true
+        self.carbAbsorptionModel = try container.decodeIfPresent(CarbAbsorptionModel.self, forKey: .carbAbsorptionModel) ?? .piecewiseLinear
 
     }
 
@@ -99,6 +102,7 @@ extension LoopPredictionInput: Codable where CarbType == FixtureCarbEntry, Gluco
         if !includePositiveVelocityAndRC {
             try container.encode(includePositiveVelocityAndRC, forKey: .includePositiveVelocityAndRC)
         }
+        try container.encode(carbAbsorptionModel, forKey: .carbAbsorptionModel)
     }
 
     private enum CodingKeys: String, CodingKey {
@@ -111,5 +115,6 @@ extension LoopPredictionInput: Codable where CarbType == FixtureCarbEntry, Gluco
         case algorithmEffectsOptions
         case useIntegralRetrospectiveCorrection
         case includePositiveVelocityAndRC
+        case carbAbsorptionModel
     }
 }

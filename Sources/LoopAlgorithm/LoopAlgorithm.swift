@@ -259,8 +259,6 @@ public struct LoopAlgorithm {
             rc = StandardRetrospectiveCorrection(effectDuration: LoopMath.retrospectiveCorrectionEffectDuration)
         }
 
-        
-
         if let latestGlucose = glucoseHistory.last {
             retrospectiveCorrectionEffects = rc.computeEffect(
                 startingAt: latestGlucose,
@@ -282,9 +280,28 @@ public struct LoopAlgorithm {
             }
 
             if algorithmEffectsOptions.contains(.retrospection) {
-                if !includingPositiveVelocityAndRC, let netRC = retrospectiveCorrectionEffects.netEffect(), netRC.quantity.doubleValue(for: .milligramsPerDeciliter) > 0 {
-                    // positive RC is turned off
-                } else {
+                // Check if glucose data is smooth enough for RC
+                // Use the same input window as retrospective correction
+                let rcInputData = glucoseHistory.filterDateRange(
+                    start.addingTimeInterval(-IntegralRetrospectiveCorrection.retrospectionInterval), 
+                    start
+                )
+
+                var useRC: Bool = true
+
+                // Don't apply RC if glucose has large jumps
+                if !rcInputData.hasGradualTransitions() {
+                    useRC = false
+                }
+
+                // Don't apply positive RC if that setting is disabled
+                if !includingPositiveVelocityAndRC, 
+                    let netRC = retrospectiveCorrectionEffects.netEffect(), 
+                    netRC.quantity.doubleValue(for: .milligramsPerDeciliter) > 0 {
+                    useRC = false
+                }
+                
+                if useRC {
                     effects.append(retrospectiveCorrectionEffects)
                 }
             }
@@ -595,4 +612,3 @@ public struct LoopAlgorithm {
         )
     }
 }
-

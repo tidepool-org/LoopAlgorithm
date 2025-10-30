@@ -62,15 +62,44 @@ extension BidirectionalCollection where Element: GlucoseSampleValue, Index == In
     ///   - interval: The interval between readings, on average, used to determine if we have a contiguous set of values
     /// - Returns: True if the samples are continuous
     public func isContinuous(within interval: TimeInterval = TimeInterval(5 * 60)) -> Bool {
-        if  let first = first,
-            let last = last,
-            // Ensure that the entries are contiguous
-            abs(first.startDate.timeIntervalSince(last.startDate)) < interval * TimeInterval(count)
-        {
-            return true
+        guard let first = first, let last = last else {
+            return false
         }
 
-        return false
+        // Ensure that the entries are contiguous
+        guard abs(first.startDate.timeIntervalSince(last.startDate)) < interval * TimeInterval(count) else {
+            return false
+        }
+
+        return true
+    }
+
+    /// Whether the collection has gradual transitions (no large glucose jumps between consecutive readings)
+    /// 
+    /// - Parameters:
+    ///   - maxJump: Maximum allowed difference between consecutive readings in mg/dL (default 20.0)
+    /// - Returns: True if all consecutive differences are within the threshold
+    public func hasGradualTransitions(maxJump: Double = 20.0) -> Bool {
+        guard count > 1 else {
+            return false  // A single point could be a spike and should not be used for momentum calculation
+        }
+       
+        // Check glucose value continuity (no large jumps)
+        let unit = LoopUnit.milligramsPerDeciliter
+        for i in 0..<(count - 1) {
+            let current = self[self.index(self.startIndex, offsetBy: i)]
+            let next = self[self.index(self.startIndex, offsetBy: i + 1)]
+
+            let currentValue = current.quantity.doubleValue(for: unit)
+            let nextValue = next.quantity.doubleValue(for: unit)
+            let difference = abs(nextValue - currentValue)
+
+            if difference > maxJump {
+                return false
+            }
+        }
+
+        return true
     }
 
     /// Calculates the short-term predicted momentum effect using linear regression
@@ -90,7 +119,7 @@ extension BidirectionalCollection where Element: GlucoseSampleValue, Index == In
 
         guard
             self.count > 2,  // Linear regression isn't much use without 3 or more entries.
-            isContinuous() && !containsCalibrations() && hasSingleProvenance,
+            hasGradualTransitions() && isContinuous() && !containsCalibrations() && hasSingleProvenance,
             let firstSample = self.first,
             let lastSample = self.last,
             let (startDate, endDate) = LoopMath.simulationDateRangeForSamples([lastSample], duration: duration, delta: delta)

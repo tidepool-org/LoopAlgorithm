@@ -375,7 +375,7 @@ public struct LoopAlgorithm {
         activeInsulin: Double,
         maxBolus: Double,
         maxBasalRate: Double,
-        maxActiveInsulin: Double,
+        maxActiveInsulin: Double
     ) -> TempBasalRecommendation {
 
         var maxBasalRate = maxBasalRate
@@ -408,7 +408,7 @@ public struct LoopAlgorithm {
         activeInsulin: Double,
         maxBolus: Double,
         maxBasalRate: Double,
-        maxActiveInsulin: Double,
+        maxActiveInsulin: Double
     ) -> AutomaticDoseRecommendation {
 
 

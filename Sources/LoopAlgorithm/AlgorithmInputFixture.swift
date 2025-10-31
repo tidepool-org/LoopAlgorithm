@@ -33,6 +33,7 @@ public struct AlgorithmInputFixture: AlgorithmInput {
     public var recommendationInsulinType: FixtureInsulinType = .novolog
     public var recommendationType: DoseRecommendationType = .automaticBolus
     public var automaticBolusApplicationFactor: Double?
+    public var gradualTransitionsThreshold: Double?
 
     public var recommendationInsulinModel: InsulinModel {
         recommendationInsulinType.insulinModel
@@ -69,7 +70,8 @@ public struct AlgorithmInputFixture: AlgorithmInput {
         carbAbsorptionModel: CarbAbsorptionModel = .piecewiseLinear,
         recommendationInsulinType: FixtureInsulinType,
         recommendationType: DoseRecommendationType,
-        automaticBolusApplicationFactor: Double? = nil
+        automaticBolusApplicationFactor: Double? = nil,
+        gradualTransitionsThreshold: Double? = 20.0
     ) {
         self.predictionStart = predictionStart
         self.glucoseHistory = glucoseHistory
@@ -89,6 +91,7 @@ public struct AlgorithmInputFixture: AlgorithmInput {
         self.recommendationInsulinType = recommendationInsulinType
         self.recommendationType = recommendationType
         self.automaticBolusApplicationFactor = automaticBolusApplicationFactor
+        self.gradualTransitionsThreshold = gradualTransitionsThreshold
     }
 }
 
@@ -140,6 +143,7 @@ extension AlgorithmInputFixture: Codable {
         }
 
         self.automaticBolusApplicationFactor = try container.decodeIfPresent(Double.self, forKey: .automaticBolusApplicationFactor)
+        self.gradualTransitionsThreshold = try container.decodeIfPresent(Double.self, forKey: .gradualTransitionsThreshold) ?? 20.0
 
     }
 
@@ -174,6 +178,7 @@ extension AlgorithmInputFixture: Codable {
         try container.encode(recommendationInsulinType.rawValue, forKey: .recommendationInsulinType)
         try container.encode(recommendationType.rawValue, forKey: .recommendationType)
         try container.encode(automaticBolusApplicationFactor, forKey: .automaticBolusApplicationFactor)
+        try container.encode(gradualTransitionsThreshold, forKey: .gradualTransitionsThreshold)
     }
 
     private enum CodingKeys: String, CodingKey {
@@ -194,6 +199,7 @@ extension AlgorithmInputFixture: Codable {
         case recommendationInsulinType
         case recommendationType
         case automaticBolusApplicationFactor
+        case gradualTransitionsThreshold
     }
 }
 
@@ -217,7 +223,8 @@ extension AlgorithmInputFixture {
             carbAbsorptionModel: input.carbAbsorptionModel,
             recommendationInsulinType: .novolog,
             recommendationType: input.recommendationType,
-            automaticBolusApplicationFactor: input.automaticBolusApplicationFactor
+            automaticBolusApplicationFactor: input.automaticBolusApplicationFactor,
+            gradualTransitionsThreshold: input.gradualTransitionsThreshold
         )
 
         let encoder = JSONEncoder()
@@ -255,4 +262,3 @@ extension CarbEntry {
         )
     }
 }
-

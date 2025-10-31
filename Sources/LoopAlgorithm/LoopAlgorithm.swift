@@ -178,7 +178,8 @@ public struct LoopAlgorithm {
         useIntegralRetrospectiveCorrection: Bool = false,
         includingPositiveVelocityAndRC: Bool = true,
         useMidAbsorptionISF: Bool = false,
-        carbAbsorptionModel: CarbAbsorptionComputable = PiecewiseLinearAbsorption()
+        carbAbsorptionModel: CarbAbsorptionComputable = PiecewiseLinearAbsorption(),
+        gradualTransitionsThreshold: Double? = 20.0
     ) -> LoopPrediction<CarbType> where CarbType: CarbEntry, GlucoseType: GlucoseSampleValue, InsulinDoseType: InsulinDose {
 
         var prediction: [PredictedGlucoseValue] = []
@@ -281,16 +282,16 @@ public struct LoopAlgorithm {
 
             if algorithmEffectsOptions.contains(.retrospection) {
                 // Check if glucose data is smooth enough for RC
-                // Use the same input window as retrospective correction
-                let rcInputData = glucoseHistory.filterDateRange(
-                    start.addingTimeInterval(-IntegralRetrospectiveCorrection.retrospectionInterval), 
-                    start
-                )
-
+                // Use the same input window as retrospective correction             
                 var useRC: Bool = true
 
                 // Don't apply RC if glucose has large jumps
-                if !rcInputData.hasGradualTransitions() {
+                let rcTransitionData = glucoseHistory.filterDateRange(
+                    start.addingTimeInterval(-LoopMath.retrospectiveCorrectionGroupingInterval), 
+                    start
+                )   
+
+                if !rcTransitionData.hasGradualTransitions(maxJump: gradualTransitionsThreshold ?? 20.0) {
                     useRC = false
                 }
 
@@ -364,7 +365,8 @@ public struct LoopAlgorithm {
             carbRatio: input.carbRatio,
             algorithmEffectsOptions: input.algorithmEffectsOptions,
             useIntegralRetrospectiveCorrection: input.useIntegralRetrospectiveCorrection,
-            carbAbsorptionModel: input.carbAbsorptionModel.model
+            carbAbsorptionModel: input.carbAbsorptionModel.model,
+            gradualTransitionsThreshold: input.gradualTransitionsThreshold
         )
     }
 
@@ -546,7 +548,8 @@ public struct LoopAlgorithm {
                 useIntegralRetrospectiveCorrection: input.useIntegralRetrospectiveCorrection,
                 includingPositiveVelocityAndRC: input.includePositiveVelocityAndRC,
                 useMidAbsorptionISF: input.useMidAbsorptionISF,
-                carbAbsorptionModel: input.carbAbsorptionModel.model
+                carbAbsorptionModel: input.carbAbsorptionModel.model,
+                gradualTransitionsThreshold: input.gradualTransitionsThreshold
             )
 
             let sensitivityForDosing: [AbsoluteScheduleValue<LoopQuantity>]

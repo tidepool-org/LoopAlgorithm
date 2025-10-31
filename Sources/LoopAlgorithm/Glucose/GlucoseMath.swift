@@ -83,7 +83,7 @@ extension BidirectionalCollection where Element: GlucoseSampleValue, Index == In
         guard count > 1 else {
             return false  // A single point could be a spike and should not be used for momentum calculation
         }
-       
+
         // Check glucose value continuity (no large jumps)
         let unit = LoopUnit.milligramsPerDeciliter
         for i in 0..<(count - 1) {
@@ -119,7 +119,7 @@ extension BidirectionalCollection where Element: GlucoseSampleValue, Index == In
 
         guard
             self.count > 2,  // Linear regression isn't much use without 3 or more entries.
-            hasGradualTransitions() && isContinuous() && !containsCalibrations() && hasSingleProvenance,
+            isContinuous() && !containsCalibrations() && hasSingleProvenance,
             let firstSample = self.first,
             let lastSample = self.last,
             let (startDate, endDate) = LoopMath.simulationDateRangeForSamples([lastSample], duration: duration, delta: delta)

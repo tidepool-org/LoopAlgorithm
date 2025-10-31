@@ -57,7 +57,8 @@ class CorrectionDosingTests: XCTestCase {
             neutralBasalRate: basalRate,
             activeInsulin: 0,
             maxBolus: 6,
-            maxBasalRate: maxBasalRate
+            maxBasalRate: maxBasalRate,
+            maxActiveInsulin: 12
         )
 
         XCTAssertEqual(recommendation.unitsPerHour, basalRate)
@@ -69,7 +70,8 @@ class CorrectionDosingTests: XCTestCase {
             neutralBasalRate: basalRate,
             activeInsulin: 0,
             maxBolus: 6,
-            maxBasalRate: maxBasalRate
+            maxBasalRate: maxBasalRate,
+            maxActiveInsulin: 12
         )
 
         XCTAssertEqual(automaticDose.bolusUnits, 0)
@@ -101,7 +103,8 @@ class CorrectionDosingTests: XCTestCase {
             neutralBasalRate: basalRate,
             activeInsulin: 0,
             maxBolus: 6,
-            maxBasalRate: maxBasalRate
+            maxBasalRate: maxBasalRate,
+            maxActiveInsulin: 12
         )
 
         XCTAssertEqual(recommendation.unitsPerHour, basalRate)
@@ -113,7 +116,8 @@ class CorrectionDosingTests: XCTestCase {
             neutralBasalRate: basalRate,
             activeInsulin: 0,
             maxBolus: 6,
-            maxBasalRate: maxBasalRate
+            maxBasalRate: maxBasalRate,
+            maxActiveInsulin: 12
         )
 
         XCTAssertEqual(automaticDose.bolusUnits, 0)
@@ -145,7 +149,8 @@ class CorrectionDosingTests: XCTestCase {
             neutralBasalRate: basalRate,
             activeInsulin: 0,
             maxBolus: 6,
-            maxBasalRate: maxBasalRate
+            maxBasalRate: maxBasalRate,
+            maxActiveInsulin: 12
         )
 
         XCTAssertEqual(recommendation.unitsPerHour, 1)
@@ -157,7 +162,8 @@ class CorrectionDosingTests: XCTestCase {
             neutralBasalRate: basalRate,
             activeInsulin: 0,
             maxBolus: 6,
-            maxBasalRate: maxBasalRate
+            maxBasalRate: maxBasalRate,
+            maxActiveInsulin: 12
         )
 
         XCTAssertEqual(automaticDose.bolusUnits, 0)
@@ -190,7 +196,8 @@ class CorrectionDosingTests: XCTestCase {
             neutralBasalRate: basalRate,
             activeInsulin: 0,
             maxBolus: 6,
-            maxBasalRate: maxBasalRate
+            maxBasalRate: maxBasalRate,
+            maxActiveInsulin: 12
         )
 
         XCTAssertEqual(recommendation.unitsPerHour, 1)
@@ -202,7 +209,8 @@ class CorrectionDosingTests: XCTestCase {
             neutralBasalRate: basalRate,
             activeInsulin: 0,
             maxBolus: 6,
-            maxBasalRate: maxBasalRate
+            maxBasalRate: maxBasalRate,
+            maxActiveInsulin: 12
         )
 
         XCTAssertEqual(automaticDose.bolusUnits, 0)
@@ -236,7 +244,8 @@ class CorrectionDosingTests: XCTestCase {
             neutralBasalRate: basalRate,
             activeInsulin: 0,
             maxBolus: 6,
-            maxBasalRate: maxBasalRate
+            maxBasalRate: maxBasalRate,
+            maxActiveInsulin: 12
         )
 
         XCTAssertEqual(recommendation.unitsPerHour, 0)
@@ -248,7 +257,8 @@ class CorrectionDosingTests: XCTestCase {
             neutralBasalRate: basalRate,
             activeInsulin: 0,
             maxBolus: 6,
-            maxBasalRate: maxBasalRate
+            maxBasalRate: maxBasalRate,
+            maxActiveInsulin: 12
         )
 
         XCTAssertEqual(automaticDose.bolusUnits, 0)
@@ -285,7 +295,8 @@ class CorrectionDosingTests: XCTestCase {
             neutralBasalRate: basalRate,
             activeInsulin: 0,
             maxBolus: 6,
-            maxBasalRate: maxBasalRate
+            maxBasalRate: maxBasalRate,
+            maxActiveInsulin: 12
         )
 
         XCTAssertEqual(recommendation.unitsPerHour, 1.0)
@@ -297,7 +308,8 @@ class CorrectionDosingTests: XCTestCase {
             neutralBasalRate: basalRate,
             activeInsulin: 0,
             maxBolus: 6,
-            maxBasalRate: maxBasalRate
+            maxBasalRate: maxBasalRate,
+            maxActiveInsulin: 12
         )
 
         XCTAssertEqual(automaticDose.bolusUnits, 0)
@@ -334,7 +346,8 @@ class CorrectionDosingTests: XCTestCase {
             neutralBasalRate: basalRate,
             activeInsulin: 0,
             maxBolus: 6,
-            maxBasalRate: maxBasalRate
+            maxBasalRate: maxBasalRate,
+            maxActiveInsulin: 12
         )
 
         XCTAssertEqual(recommendation.unitsPerHour, 3.0)
@@ -346,7 +359,8 @@ class CorrectionDosingTests: XCTestCase {
             neutralBasalRate: basalRate,
             activeInsulin: 0,
             maxBolus: 6,
-            maxBasalRate: maxBasalRate
+            maxBasalRate: maxBasalRate,
+            maxActiveInsulin: 12
         )
 
         XCTAssertEqual(automaticDose.bolusUnits!, 0.65, accuracy: 0.05)
@@ -380,7 +394,8 @@ class CorrectionDosingTests: XCTestCase {
             neutralBasalRate: basalRate,
             activeInsulin: 0,
             maxBolus: 6,
-            maxBasalRate: maxBasalRate
+            maxBasalRate: maxBasalRate,
+            maxActiveInsulin: 12
         )
 
         XCTAssertEqual(recommendation.unitsPerHour, 1.63, accuracy: 0.05)
@@ -392,7 +407,8 @@ class CorrectionDosingTests: XCTestCase {
             neutralBasalRate: basalRate,
             activeInsulin: 0,
             maxBolus: 6,
-            maxBasalRate: maxBasalRate
+            maxBasalRate: maxBasalRate,
+            maxActiveInsulin: 12
         )
 
         XCTAssertEqual(automaticDose.bolusUnits!, 0.10, accuracy: 0.05)
@@ -425,7 +441,8 @@ class CorrectionDosingTests: XCTestCase {
             neutralBasalRate: basalRate,
             activeInsulin: 0,
             maxBolus: 6,
-            maxBasalRate: maxBasalRate
+            maxBasalRate: maxBasalRate,
+            maxActiveInsulin: 12
         )
 
         XCTAssertEqual(recommendation.unitsPerHour, 1.63, accuracy: 0.05)
@@ -437,7 +454,8 @@ class CorrectionDosingTests: XCTestCase {
             neutralBasalRate: basalRate,
             activeInsulin: 0,
             maxBolus: 6,
-            maxBasalRate: maxBasalRate
+            maxBasalRate: maxBasalRate,
+            maxActiveInsulin: 12
         )
 
         XCTAssertEqual(automaticDose.bolusUnits!, 0.10, accuracy: 0.05)
@@ -470,7 +488,8 @@ class CorrectionDosingTests: XCTestCase {
             neutralBasalRate: basalRate,
             activeInsulin: 0,
             maxBolus: 6,
-            maxBasalRate: maxBasalRate
+            maxBasalRate: maxBasalRate,
+            maxActiveInsulin: 12
         )
 
         XCTAssertEqual(recommendation.unitsPerHour, 3.0, accuracy: 0.05)
@@ -482,7 +501,8 @@ class CorrectionDosingTests: XCTestCase {
             neutralBasalRate: basalRate,
             activeInsulin: 0,
             maxBolus: 6,
-            maxBasalRate: maxBasalRate
+            maxBasalRate: maxBasalRate,
+            maxActiveInsulin: 12
         )
 
         XCTAssertEqual(automaticDose.bolusUnits!, 0.5, accuracy: 0.05)
@@ -515,7 +535,8 @@ class CorrectionDosingTests: XCTestCase {
             neutralBasalRate: basalRate,
             activeInsulin: 0,
             maxBolus: 6,
-            maxBasalRate: maxBasalRate
+            maxBasalRate: maxBasalRate,
+            maxActiveInsulin: 12
         )
 
         XCTAssertEqual(recommendation.unitsPerHour, 0, accuracy: 0.05)
@@ -527,7 +548,8 @@ class CorrectionDosingTests: XCTestCase {
             neutralBasalRate: basalRate,
             activeInsulin: 0,
             maxBolus: 6,
-            maxBasalRate: maxBasalRate
+            maxBasalRate: maxBasalRate,
+            maxActiveInsulin: 12
         )
 
         XCTAssertEqual(automaticDose.bolusUnits!, 0.0, accuracy: 0.05)

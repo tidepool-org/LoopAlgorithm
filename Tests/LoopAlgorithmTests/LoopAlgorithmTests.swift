@@ -203,9 +203,7 @@ final class LoopAlgorithmTests: XCTestCase {
 
         // 150 mg/dL is the middle of the target range
         XCTAssertEqual(output2.predictedGlucose.last!.quantity.doubleValue(for: .milligramsPerDeciliter), 150, accuracy: 0.1)
-
     }
-
 
     func testMidAborptionISFFlag() {
         let now = ISO8601DateFormatter().date(from: "2024-01-03T00:00:00+0000")!

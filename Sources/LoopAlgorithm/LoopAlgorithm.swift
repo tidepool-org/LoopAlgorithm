@@ -374,7 +374,8 @@ public struct LoopAlgorithm {
         neutralBasalRate: Double,
         activeInsulin: Double,
         maxBolus: Double,
-        maxBasalRate: Double
+        maxBasalRate: Double,
+        maxActiveInsulin: Double
     ) -> TempBasalRecommendation {
 
         var maxBasalRate = maxBasalRate
@@ -386,12 +387,11 @@ public struct LoopAlgorithm {
             maxBasalRate = neutralBasalRate
         }
 
-        // Enforce max IOB, calculated from the user entered maxBolus
-        let automaticDosingIOBLimit = maxBolus * 2.0
-        let iobHeadroom = automaticDosingIOBLimit - activeInsulin
+        // Enforce max active insulin
+        let activeInsulinHeadroom = maxActiveInsulin - activeInsulin
 
-        let maxThirtyMinuteRateToKeepIOBBelowLimit = iobHeadroom * (TimeInterval.hours(1) / tempBasalDuration) + neutralBasalRate  // 30 minutes of a U/hr rate
-        maxBasalRate = Swift.min(maxThirtyMinuteRateToKeepIOBBelowLimit, maxBasalRate)
+        let maxThirtyMinuteRateToKeepActiveInsulinBelowLimit = activeInsulinHeadroom * (TimeInterval.hours(1) / tempBasalDuration) + neutralBasalRate  // 30 minutes of a U/hr rate
+        maxBasalRate = Swift.min(maxThirtyMinuteRateToKeepActiveInsulinBelowLimit, maxBasalRate)
 
         return correction.asTempBasal(
             neutralBasalRate: neutralBasalRate,
@@ -407,11 +407,12 @@ public struct LoopAlgorithm {
         neutralBasalRate: Double,
         activeInsulin: Double,
         maxBolus: Double,
-        maxBasalRate: Double
+        maxBasalRate: Double,
+        maxActiveInsulin: Double
     ) -> AutomaticDoseRecommendation {
 
 
-        let deliveryHeadroom = max(0, maxBolus * 2.0 - activeInsulin)
+        let deliveryHeadroom = max(0, maxActiveInsulin - activeInsulin)
 
         var deliveryMax = min(maxBolus * applicationFactor, deliveryHeadroom)
 
@@ -555,6 +556,8 @@ public struct LoopAlgorithm {
                 sensitivity: sensitivityForDosing,
                 insulinModel: input.recommendationInsulinModel)
 
+            let maxActiveInsulin = input.maxBolus * (input.maxActiveInsulinMultiplier ?? 2)
+
             switch input.recommendationType {
             case .manualBolus:
                 let recommendation = recommendManualBolus(
@@ -570,7 +573,8 @@ public struct LoopAlgorithm {
                     neutralBasalRate: scheduledBasalRate,
                     activeInsulin: prediction.activeInsulin!,
                     maxBolus: input.maxBolus,
-                    maxBasalRate: input.maxBasalRate)
+                    maxBasalRate: input.maxBasalRate,
+                    maxActiveInsulin: maxActiveInsulin)
                 result = .success(.init(automatic: recommendation))
             case .tempBasal:
                 let recommendation = recommendTempBasal(
@@ -578,7 +582,8 @@ public struct LoopAlgorithm {
                     neutralBasalRate: scheduledBasalRate,
                     activeInsulin: prediction.activeInsulin!,
                     maxBolus: input.maxBolus,
-                    maxBasalRate: input.maxBasalRate)
+                    maxBasalRate: input.maxBasalRate,
+                    maxActiveInsulin: maxActiveInsulin)
                 result = .success(.init(automatic: AutomaticDoseRecommendation(basalAdjustment: recommendation, direction: .from(correction: correction))))
             }
         } catch {

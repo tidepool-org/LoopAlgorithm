@@ -119,7 +119,7 @@ extension BidirectionalCollection where Element: GlucoseSampleValue, Index == In
 
         guard
             self.count > 2,  // Linear regression isn't much use without 3 or more entries.
-            isContinuous() && !containsCalibrations() && hasSingleProvenance,
+            hasGradualTransitions() && isContinuous() && !containsCalibrations() && hasSingleProvenance,
             let firstSample = self.first,
             let lastSample = self.last,
             let (startDate, endDate) = LoopMath.simulationDateRangeForSamples([lastSample], duration: duration, delta: delta)

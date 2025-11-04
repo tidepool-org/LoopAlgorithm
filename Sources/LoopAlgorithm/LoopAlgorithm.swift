@@ -299,8 +299,8 @@ public struct LoopAlgorithm {
                 if !includingPositiveVelocityAndRC, 
                     let netRC = retrospectiveCorrectionEffects.netEffect(), 
                     netRC.quantity.doubleValue(for: .milligramsPerDeciliter) > 0 {
-                    useRC = false
-                }
+                        useRC = false
+                    }
                 
                 if useRC {
                     effects.append(retrospectiveCorrectionEffects)

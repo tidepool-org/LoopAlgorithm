@@ -25,6 +25,7 @@ public struct AlgorithmInputFixture: AlgorithmInput {
     public var target: GlucoseRangeTimeline
     public var suspendThreshold: LoopQuantity?
     public var maxBolus: Double
+    public var maxActiveInsulinMultiplier: Double?
     public var maxBasalRate: Double
     public var useIntegralRetrospectiveCorrection: Bool
     public var includePositiveVelocityAndRC: Bool
@@ -63,6 +64,7 @@ public struct AlgorithmInputFixture: AlgorithmInput {
         target: GlucoseRangeTimeline,
         suspendThreshold: LoopQuantity?,
         maxBolus: Double,
+        maxActiveInsulinMultiplier: Double? = nil,
         maxBasalRate: Double,
         useIntegralRetrospectiveCorrection: Bool = false,
         useMidAbsorptionISF: Bool = false,
@@ -83,6 +85,7 @@ public struct AlgorithmInputFixture: AlgorithmInput {
         self.target = target
         self.suspendThreshold = suspendThreshold
         self.maxBolus = maxBolus
+        self.maxActiveInsulinMultiplier = maxActiveInsulinMultiplier
         self.maxBasalRate = maxBasalRate
         self.useIntegralRetrospectiveCorrection = useIntegralRetrospectiveCorrection
         self.includePositiveVelocityAndRC = includePositiveVelocityAndRC
@@ -119,6 +122,7 @@ extension AlgorithmInputFixture: Codable {
             self.suspendThreshold = LoopQuantity(unit: .milligramsPerDeciliter, doubleValue: suspendThresholdMgdl)
         }
         self.maxBolus = try container.decode(Double.self, forKey: .maxBolus)
+        self.maxActiveInsulinMultiplier = try container.decodeIfPresent(Double.self, forKey: .maxActiveInsulinMultiplier)
         self.maxBasalRate = try container.decode(Double.self, forKey: .maxBasalRate)
         self.useIntegralRetrospectiveCorrection = try container.decodeIfPresent(Bool.self, forKey: .useIntegralRetrospectiveCorrection) ?? false
         self.includePositiveVelocityAndRC = try container.decodeIfPresent(Bool.self, forKey: .includePositiveVelocityAndRC) ?? true
@@ -167,6 +171,7 @@ extension AlgorithmInputFixture: Codable {
         try container.encode(targetMgdl, forKey: .target)
         try container.encode(suspendThreshold?.doubleValue(for: .milligramsPerDeciliter), forKey: .suspendThreshold)
         try container.encode(maxBolus, forKey: .maxBolus)
+        try container.encode(maxActiveInsulinMultiplier, forKey: .maxActiveInsulinMultiplier)
         try container.encode(maxBasalRate, forKey: .maxBasalRate)
         if useIntegralRetrospectiveCorrection {
             try container.encode(useIntegralRetrospectiveCorrection, forKey: .useIntegralRetrospectiveCorrection)
@@ -192,6 +197,7 @@ extension AlgorithmInputFixture: Codable {
         case target
         case suspendThreshold
         case maxBolus
+        case maxActiveInsulinMultiplier
         case maxBasalRate
         case useIntegralRetrospectiveCorrection
         case includePositiveVelocityAndRC

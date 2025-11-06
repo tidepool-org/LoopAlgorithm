@@ -291,7 +291,7 @@ public struct LoopAlgorithm {
                     start
                 )   
 
-                if !rcTransitionData.hasGradualTransitions(maxJump: gradualTransitionsThreshold ?? 40.0) {
+                if !rcTransitionData.hasGradualTransitions(gradualTransitionThreshold: gradualTransitionsThreshold ?? 40.0) {
                     useRC = false
                 }
 

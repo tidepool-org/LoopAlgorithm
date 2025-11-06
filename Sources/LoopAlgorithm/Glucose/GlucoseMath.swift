@@ -77,9 +77,9 @@ extension BidirectionalCollection where Element: GlucoseSampleValue, Index == In
     /// Whether the collection has gradual transitions (no large glucose jumps between consecutive readings)
     /// 
     /// - Parameters:
-    ///   - maxJump: Maximum allowed difference between consecutive readings in mg/dL (default 20.0)
+    ///   - maxJump: Maximum allowed difference between consecutive readings in mg/dL (default 40.0)
     /// - Returns: True if all consecutive differences are within the threshold
-    public func hasGradualTransitions(maxJump: Double = 20.0) -> Bool {
+    public func hasGradualTransitions(maxJump: Double = 40.0) -> Bool {
         guard count > 1 else {
             return false  // A single point could be a spike and should not be used for momentum calculation
         }

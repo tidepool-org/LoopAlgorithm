@@ -179,7 +179,7 @@ public struct LoopAlgorithm {
         includingPositiveVelocityAndRC: Bool = true,
         useMidAbsorptionISF: Bool = false,
         carbAbsorptionModel: CarbAbsorptionComputable = PiecewiseLinearAbsorption(),
-        gradualTransitionsThreshold: Double? = 20.0
+        gradualTransitionsThreshold: Double? = 40.0
     ) -> LoopPrediction<CarbType> where CarbType: CarbEntry, GlucoseType: GlucoseSampleValue, InsulinDoseType: InsulinDose {
 
         var prediction: [PredictedGlucoseValue] = []
@@ -291,7 +291,7 @@ public struct LoopAlgorithm {
                     start
                 )   
 
-                if !rcTransitionData.hasGradualTransitions(maxJump: gradualTransitionsThreshold ?? 20.0) {
+                if !rcTransitionData.hasGradualTransitions(maxJump: gradualTransitionsThreshold ?? 40.0) {
                     useRC = false
                 }
 

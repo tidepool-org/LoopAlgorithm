@@ -35,7 +35,7 @@ public struct LoopPredictionInput<CarbType: CarbEntry, GlucoseType: GlucoseSampl
 
     public var carbAbsorptionModel: CarbAbsorptionModel = .piecewiseLinear
     
-    public var gradualTransitionsThreshold: Double? = 20.0
+    public var gradualTransitionsThreshold: Double? = 40.0
 
     public init(
         glucoseHistory: [GlucoseType],
@@ -48,7 +48,7 @@ public struct LoopPredictionInput<CarbType: CarbEntry, GlucoseType: GlucoseSampl
         useIntegralRetrospectiveCorrection: Bool,
         includePositiveVelocityAndRC: Bool,
         carbAbsorptionModel: CarbAbsorptionModel,
-        gradualTransitionsThreshold: Double? = 20.0
+        gradualTransitionsThreshold: Double? = 40.0
     )
     {
         self.glucoseHistory = glucoseHistory
@@ -85,7 +85,7 @@ extension LoopPredictionInput: Codable where CarbType == FixtureCarbEntry, Gluco
         self.useIntegralRetrospectiveCorrection = try container.decodeIfPresent(Bool.self, forKey: .useIntegralRetrospectiveCorrection) ?? false
         self.includePositiveVelocityAndRC = try container.decodeIfPresent(Bool.self, forKey: .includePositiveVelocityAndRC) ?? true
         self.carbAbsorptionModel = try container.decodeIfPresent(CarbAbsorptionModel.self, forKey: .carbAbsorptionModel) ?? .piecewiseLinear
-        self.gradualTransitionsThreshold = try container.decodeIfPresent(Double.self, forKey: .gradualTransitionsThreshold) ?? 20.0
+        self.gradualTransitionsThreshold = try container.decodeIfPresent(Double.self, forKey: .gradualTransitionsThreshold) ?? 40.0
 
     }
 

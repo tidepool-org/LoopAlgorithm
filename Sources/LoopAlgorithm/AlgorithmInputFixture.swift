@@ -71,7 +71,7 @@ public struct AlgorithmInputFixture: AlgorithmInput {
         recommendationInsulinType: FixtureInsulinType,
         recommendationType: DoseRecommendationType,
         automaticBolusApplicationFactor: Double? = nil,
-        gradualTransitionsThreshold: Double? = 20.0
+        gradualTransitionsThreshold: Double? = 40.0
     ) {
         self.predictionStart = predictionStart
         self.glucoseHistory = glucoseHistory
@@ -143,7 +143,7 @@ extension AlgorithmInputFixture: Codable {
         }
 
         self.automaticBolusApplicationFactor = try container.decodeIfPresent(Double.self, forKey: .automaticBolusApplicationFactor)
-        self.gradualTransitionsThreshold = try container.decodeIfPresent(Double.self, forKey: .gradualTransitionsThreshold) ?? 20.0
+        self.gradualTransitionsThreshold = try container.decodeIfPresent(Double.self, forKey: .gradualTransitionsThreshold) ?? 40.0
 
     }
 

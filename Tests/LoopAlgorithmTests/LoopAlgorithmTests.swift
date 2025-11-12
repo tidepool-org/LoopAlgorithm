@@ -11,6 +11,20 @@ import XCTest
 
 final class LoopAlgorithmTests: XCTestCase {
 
+    private func sample(at date: Date,
+                        glucose mgdL: Double,
+                        provenance: String = "test",
+                        displayOnly: Bool = false) -> FixtureGlucoseSample {
+        FixtureGlucoseSample(
+            provenanceIdentifier: provenance,
+            startDate: date,
+            quantity: LoopQuantity(unit: .milligramsPerDeciliter, doubleValue: mgdL),
+            isDisplayOnly: displayOnly,
+            wasUserEntered: false,
+        )
+    }
+
+
     func loadScenario(_ name: String) -> (input: AlgorithmInputFixture, recommendation: LoopAlgorithmDoseRecommendation) {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
@@ -175,6 +189,34 @@ final class LoopAlgorithmTests: XCTestCase {
             XCTAssertEqual(expected.quantity.doubleValue(for: .milligramsPerDeciliter), calculated.quantity.doubleValue(for: .milligramsPerDeciliter), accuracy: defaultAccuracy)
         }
     }
+
+    func testSpuriousReadingDisablesRCAndMomentum() {
+
+        let base = ISO8601DateFormatter().date(from: "2024-01-03T12:00:00+0000")!
+
+        var input = AlgorithmInputFixture.mock(for: base.addingTimeInterval(.minutes(30)))
+
+        input.glucoseHistory = [
+            sample(at: base,                     glucose: 100),
+            sample(at: base + .minutes(5),       glucose: 115),
+            sample(at: base + .minutes(10),      glucose: 125),
+            sample(at: base + .minutes(15),      glucose: 179), // +45 jump
+            sample(at: base + .minutes(20),      glucose: 148),
+            sample(at: base + .minutes(25),      glucose: 158),
+            sample(at: base + .minutes(30),      glucose: 168)
+        ]
+
+        // With a spurious reading over the gradualTransitionsThreshold of 40 mg/dL, momentum and rc are turned off, and the forecast is lower.
+        var output = LoopAlgorithm.run(input: input)
+        XCTAssertEqual(output.predictedGlucose.last!.quantity.doubleValue(for: .milligramsPerDeciliter), 164.5, accuracy: 0.1)
+
+        // With the threshold set high, our spurious reading is still considered gradual, and RC and momentum will be used, resulting in a higher forecast.
+        input.gradualTransitionsThreshold = 60
+        output = LoopAlgorithm.run(input: input)
+        XCTAssertEqual(output.predictedGlucose.last!.quantity.doubleValue(for: .milligramsPerDeciliter), 216, accuracy: 0.1)
+
+    }
+
 
     func testMealBolusScenario() {
         let decoder = JSONDecoder()

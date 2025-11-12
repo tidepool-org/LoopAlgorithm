@@ -61,17 +61,16 @@ extension BidirectionalCollection where Element: GlucoseSampleValue, Index == In
     /// - Parameters:
     ///   - interval: The interval between readings, on average, used to determine if we have a contiguous set of values
     /// - Returns: True if the samples are continuous
-    public func isContinuous(within interval: TimeInterval = TimeInterval(5 * 60)) -> Bool {
-        guard let first = first, let last = last else {
-            return false
+    func isContinuous(within interval: TimeInterval = TimeInterval(minutes: 5)) -> Bool {
+        if  let first = first,
+            let last = last,
+            // Ensure that the entries are contiguous
+            abs(first.startDate.timeIntervalSince(last.startDate)) < interval * TimeInterval(count)
+        {
+            return true
         }
 
-        // Ensure that the entries are contiguous
-        guard abs(first.startDate.timeIntervalSince(last.startDate)) < interval * TimeInterval(count) else {
-            return false
-        }
-
-        return true
+        return false
     }
 
     /// Whether the collection has gradual transitions (no large glucose jumps between consecutive readings)

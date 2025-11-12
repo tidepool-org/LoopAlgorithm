@@ -8,6 +8,7 @@ jobs:
   test:
     macos:
       xcode: 26.1.0
+    resource_class: m4pro.medium
     steps:
       - checkout
       - run:
@@ -19,6 +20,7 @@ jobs:
   package:
     macos:
       xcode: 26.1.0
+    resource_class: m4pro.medium
     steps:
       - checkout
       - run:

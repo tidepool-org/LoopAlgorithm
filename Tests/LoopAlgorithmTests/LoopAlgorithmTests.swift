@@ -20,7 +20,7 @@ final class LoopAlgorithmTests: XCTestCase {
             startDate: date,
             quantity: LoopQuantity(unit: .milligramsPerDeciliter, doubleValue: mgdL),
             isDisplayOnly: displayOnly,
-            wasUserEntered: false,
+            wasUserEntered: false
         )
     }
 

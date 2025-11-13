@@ -33,6 +33,5 @@ public protocol AlgorithmInput {
     var recommendationInsulinModel: InsulinModel { get }
     var recommendationType: DoseRecommendationType { get }
     var automaticBolusApplicationFactor: Double? { get } // Defaults to 0.4
+    var gradualTransitionsThreshold: Double? { get }
 }
-
-

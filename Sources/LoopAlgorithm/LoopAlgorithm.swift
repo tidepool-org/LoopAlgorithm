@@ -178,7 +178,8 @@ public struct LoopAlgorithm {
         useIntegralRetrospectiveCorrection: Bool = false,
         includingPositiveVelocityAndRC: Bool = true,
         useMidAbsorptionISF: Bool = false,
-        carbAbsorptionModel: CarbAbsorptionComputable = PiecewiseLinearAbsorption()
+        carbAbsorptionModel: CarbAbsorptionComputable = PiecewiseLinearAbsorption(),
+        gradualTransitionsThreshold: Double? = 40.0
     ) -> LoopPrediction<CarbType> where CarbType: CarbEntry, GlucoseType: GlucoseSampleValue, InsulinDoseType: InsulinDose {
 
         var prediction: [PredictedGlucoseValue] = []
@@ -259,8 +260,6 @@ public struct LoopAlgorithm {
             rc = StandardRetrospectiveCorrection(effectDuration: LoopMath.retrospectiveCorrectionEffectDuration)
         }
 
-        
-
         if let latestGlucose = glucoseHistory.last {
             retrospectiveCorrectionEffects = rc.computeEffect(
                 startingAt: latestGlucose,
@@ -282,9 +281,28 @@ public struct LoopAlgorithm {
             }
 
             if algorithmEffectsOptions.contains(.retrospection) {
-                if !includingPositiveVelocityAndRC, let netRC = retrospectiveCorrectionEffects.netEffect(), netRC.quantity.doubleValue(for: .milligramsPerDeciliter) > 0 {
-                    // positive RC is turned off
-                } else {
+                // Check if glucose data is smooth enough for RC
+                // Use the same input window as retrospective correction             
+                var useRC: Bool = true
+
+                // Don't apply RC if glucose has large jumps
+                let rcTransitionData = glucoseHistory.filterDateRange(
+                    start.addingTimeInterval(-LoopMath.retrospectiveCorrectionGroupingInterval), 
+                    start
+                )   
+
+                if !rcTransitionData.hasGradualTransitions(gradualTransitionThreshold: gradualTransitionsThreshold ?? 40.0) {
+                    useRC = false
+                }
+
+                // Don't apply positive RC if that setting is disabled
+                if !includingPositiveVelocityAndRC, 
+                    let netRC = retrospectiveCorrectionEffects.netEffect(), 
+                    netRC.quantity.doubleValue(for: .milligramsPerDeciliter) > 0 {
+                        useRC = false
+                    }
+                
+                if useRC {
                     effects.append(retrospectiveCorrectionEffects)
                 }
             }
@@ -347,7 +365,8 @@ public struct LoopAlgorithm {
             carbRatio: input.carbRatio,
             algorithmEffectsOptions: input.algorithmEffectsOptions,
             useIntegralRetrospectiveCorrection: input.useIntegralRetrospectiveCorrection,
-            carbAbsorptionModel: input.carbAbsorptionModel.model
+            carbAbsorptionModel: input.carbAbsorptionModel.model,
+            gradualTransitionsThreshold: input.gradualTransitionsThreshold
         )
     }
 
@@ -530,7 +549,8 @@ public struct LoopAlgorithm {
                 useIntegralRetrospectiveCorrection: input.useIntegralRetrospectiveCorrection,
                 includingPositiveVelocityAndRC: input.includePositiveVelocityAndRC,
                 useMidAbsorptionISF: input.useMidAbsorptionISF,
-                carbAbsorptionModel: input.carbAbsorptionModel.model
+                carbAbsorptionModel: input.carbAbsorptionModel.model,
+                gradualTransitionsThreshold: input.gradualTransitionsThreshold
             )
 
             let sensitivityForDosing: [AbsoluteScheduleValue<LoopQuantity>]
@@ -600,4 +620,3 @@ public struct LoopAlgorithm {
         )
     }
 }
-

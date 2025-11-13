@@ -34,6 +34,8 @@ public struct LoopPredictionInput<CarbType: CarbEntry, GlucoseType: GlucoseSampl
     public var includePositiveVelocityAndRC: Bool = true
 
     public var carbAbsorptionModel: CarbAbsorptionModel = .piecewiseLinear
+    
+    public var gradualTransitionsThreshold: Double? = 40.0
 
     public init(
         glucoseHistory: [GlucoseType],
@@ -45,7 +47,8 @@ public struct LoopPredictionInput<CarbType: CarbEntry, GlucoseType: GlucoseSampl
         algorithmEffectsOptions: AlgorithmEffectsOptions,
         useIntegralRetrospectiveCorrection: Bool,
         includePositiveVelocityAndRC: Bool,
-        carbAbsorptionModel: CarbAbsorptionModel
+        carbAbsorptionModel: CarbAbsorptionModel,
+        gradualTransitionsThreshold: Double? = 40.0
     )
     {
         self.glucoseHistory = glucoseHistory
@@ -58,6 +61,7 @@ public struct LoopPredictionInput<CarbType: CarbEntry, GlucoseType: GlucoseSampl
         self.useIntegralRetrospectiveCorrection = useIntegralRetrospectiveCorrection
         self.includePositiveVelocityAndRC = includePositiveVelocityAndRC
         self.carbAbsorptionModel = carbAbsorptionModel
+        self.gradualTransitionsThreshold = gradualTransitionsThreshold
     }
 }
 
@@ -81,6 +85,7 @@ extension LoopPredictionInput: Codable where CarbType == FixtureCarbEntry, Gluco
         self.useIntegralRetrospectiveCorrection = try container.decodeIfPresent(Bool.self, forKey: .useIntegralRetrospectiveCorrection) ?? false
         self.includePositiveVelocityAndRC = try container.decodeIfPresent(Bool.self, forKey: .includePositiveVelocityAndRC) ?? true
         self.carbAbsorptionModel = try container.decodeIfPresent(CarbAbsorptionModel.self, forKey: .carbAbsorptionModel) ?? .piecewiseLinear
+        self.gradualTransitionsThreshold = try container.decodeIfPresent(Double.self, forKey: .gradualTransitionsThreshold) ?? 40.0
 
     }
 
@@ -103,6 +108,7 @@ extension LoopPredictionInput: Codable where CarbType == FixtureCarbEntry, Gluco
             try container.encode(includePositiveVelocityAndRC, forKey: .includePositiveVelocityAndRC)
         }
         try container.encode(carbAbsorptionModel, forKey: .carbAbsorptionModel)
+        try container.encode(gradualTransitionsThreshold, forKey: .gradualTransitionsThreshold)
     }
 
     private enum CodingKeys: String, CodingKey {
@@ -116,5 +122,6 @@ extension LoopPredictionInput: Codable where CarbType == FixtureCarbEntry, Gluco
         case useIntegralRetrospectiveCorrection
         case includePositiveVelocityAndRC
         case carbAbsorptionModel
+        case gradualTransitionsThreshold
     }
 }

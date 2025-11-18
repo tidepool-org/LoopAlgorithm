@@ -10,8 +10,14 @@ import Foundation
 
 
 // MARK: - Extensions useful in parsing fixture dates
+extension TimeZone {
+    static var currentFixed: TimeZone {
+        return TimeZone(secondsFromGMT: TimeZone.current.secondsFromGMT())!
+    }
+}
+
 extension ISO8601DateFormatter {
-    static func localTimeDate(timeZone: TimeZone) -> Self {
+    static func localTimeDate(timeZone: TimeZone = .currentFixed) -> Self {
         let formatter = self.init()
 
         formatter.formatOptions = .withInternetDateTime

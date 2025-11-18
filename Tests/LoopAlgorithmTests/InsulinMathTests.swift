@@ -27,12 +27,6 @@ class InsulinMathTests: XCTestCase {
         print("\n\n")
     }
 
-
-    public func loadFixture<T>(_ resourceName: String) -> T {
-        let url = Bundle.module.url(forResource: resourceName, withExtension: "json", subdirectory: "Fixtures")!
-        return try! JSONSerialization.jsonObject(with: Data(contentsOf: url), options: []) as! T
-    }
-
     func loadGlucoseEffectFixture(_ resourceName: String) -> [GlucoseEffect] {
         let fixture: [JSONDictionary] = loadFixture(resourceName)
         let dateFormatter = ISO8601DateFormatter.localTimeDate(timeZone: fixtureTimeZone)

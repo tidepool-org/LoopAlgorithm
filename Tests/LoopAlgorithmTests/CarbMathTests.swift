@@ -13,11 +13,6 @@ public typealias JSONDictionary = [String: Any]
 
 class CarbMathTests: XCTestCase {
 
-    public func loadFixture<T>(_ resourceName: String) -> T {
-        let url = Bundle.module.url(forResource: resourceName, withExtension: "json", subdirectory: "Fixtures")!
-        return try! JSONSerialization.jsonObject(with: Data(contentsOf: url), options: []) as! T
-    }
-
     private func loadEffectOutputFixture(_ name: String) -> [GlucoseEffect] {
         let fixture: [JSONDictionary] = loadFixture(name)
         let dateFormatter = ISO8601DateFormatter.localTimeDate(timeZone: TimeZone(secondsFromGMT: 0)!)

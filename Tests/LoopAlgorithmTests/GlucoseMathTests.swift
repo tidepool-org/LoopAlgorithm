@@ -8,6 +8,40 @@
 import XCTest
 @testable import LoopAlgorithm
 
+extension XCTestCase {
+    public func loadFixture<T>(_ resourceName: String) -> T {
+        let url = Bundle.module.url(forResource: resourceName, withExtension: "json", subdirectory: "Fixtures")!
+        return try! JSONSerialization.jsonObject(with: Data(contentsOf: url), options: []) as! T
+    }
+}
+
+public struct GlucoseFixtureValue: GlucoseSampleValue {
+    public let startDate: Date
+    public let quantity: LoopQuantity
+    public let isDisplayOnly: Bool
+    public let wasUserEntered: Bool
+    public let provenanceIdentifier: String
+    public let condition: GlucoseCondition?
+    public let trendRate: LoopQuantity?
+    public var syncIdentifier: String?
+
+    public init(startDate: Date, quantity: LoopQuantity, isDisplayOnly: Bool, wasUserEntered: Bool, provenanceIdentifier: String?, condition: GlucoseCondition?, trendRate: LoopQuantity?) {
+        self.startDate = startDate
+        self.quantity = quantity
+        self.isDisplayOnly = isDisplayOnly
+        self.wasUserEntered = wasUserEntered
+        self.provenanceIdentifier = provenanceIdentifier ?? "com.loopkit.LoopKitTests"
+        self.condition = condition
+        self.trendRate = trendRate
+    }
+}
+
+extension GlucoseFixtureValue: Comparable {
+    public static func <(lhs: GlucoseFixtureValue, rhs: GlucoseFixtureValue) -> Bool {
+        return lhs.startDate < rhs.startDate
+    }
+}
+
 final class GlucoseMathTests: XCTestCase {
 
     // MARK: - Helper to create a mock GlucoseSampleValue
@@ -20,9 +54,6 @@ final class GlucoseMathTests: XCTestCase {
         var wasUserEntered: Bool
         var condition: GlucoseCondition?
         var trendRate: LoopQuantity?
-
-        // GlucoseValue conformance
-        var endDate: Date { startDate }
     }
 
     private func sample(at date: Date,
@@ -170,4 +201,235 @@ final class GlucoseMathTests: XCTestCase {
         XCTAssertFalse(samples.hasSingleProvenance,
                        "Different provenance identifiers -> false")
     }
+
+    func loadInputFixture(_ resourceName: String) -> [GlucoseFixtureValue] {
+        let fixture: [JSONDictionary] = loadFixture(resourceName)
+        let dateFormatter = ISO8601DateFormatter.localTimeDate()
+
+        return fixture.map {
+            return GlucoseFixtureValue(
+                startDate: dateFormatter.date(from: $0["date"] as! String)!,
+                quantity: LoopQuantity(unit: LoopUnit.milligramsPerDeciliter, doubleValue: $0["amount"] as! Double),
+                isDisplayOnly: ($0["display_only"] as? Bool) ?? false,
+                wasUserEntered: ($0["user_entered"] as? Bool) ?? false,
+                provenanceIdentifier: $0["provenance_identifier"] as? String,
+                condition: ($0["condition"] as? String).flatMap { GlucoseCondition(rawValue: $0) },
+                trendRate: ($0["trend_rate"] as? Double).flatMap { LoopQuantity(unit: .milligramsPerDeciliter, doubleValue: $0) }
+            )
+        }
+    }
+
+    func loadOutputFixture(_ resourceName: String) -> [GlucoseEffect] {
+        let fixture: [JSONDictionary] = loadFixture(resourceName)
+        let dateFormatter = ISO8601DateFormatter.localTimeDate()
+
+        return fixture.map {
+            return GlucoseEffect(startDate: dateFormatter.date(from: $0["date"] as! String)!, quantity: LoopQuantity(unit: LoopUnit(from: $0["unit"] as! String), doubleValue: $0["amount"] as! Double))
+        }
+    }
+
+    func loadEffectVelocityFixture(_ resourceName: String) -> [GlucoseEffectVelocity] {
+        let fixture: [JSONDictionary] = loadFixture(resourceName)
+        let dateFormatter = ISO8601DateFormatter.localTimeDate()
+
+        return fixture.map {
+            return GlucoseEffectVelocity(startDate: dateFormatter.date(from: $0["startDate"] as! String)!, endDate: dateFormatter.date(from: $0["endDate"] as! String)!, quantity: LoopQuantity(unit: LoopUnit(from: $0["unit"] as! String), doubleValue:$0["value"] as! Double))
+        }
+    }
+
+    func testMomentumEffectForBouncingGlucose() {
+        let input = loadInputFixture("momentum_effect_bouncing_glucose_input")
+        let output = loadOutputFixture("momentum_effect_bouncing_glucose_output")
+
+        let effects = input.linearMomentumEffect(duration: .minutes(30))
+        let unit = LoopUnit.milligramsPerDeciliter
+
+        XCTAssertEqual(output.count, effects.count)
+
+        for (expected, calculated) in zip(output, effects) {
+            XCTAssertEqual(expected.startDate, calculated.startDate)
+            XCTAssertEqual(expected.quantity.doubleValue(for: unit), calculated.quantity.doubleValue(for: unit), accuracy: Double(Float.ulpOfOne))
+        }
+    }
+
+    func testMomentumEffectForRisingGlucose() {
+        let input = loadInputFixture("momentum_effect_rising_glucose_input")
+        let output = loadOutputFixture("momentum_effect_rising_glucose_output")
+
+        let effects = input.linearMomentumEffect(duration: .minutes(30))
+        let unit = LoopUnit.milligramsPerDeciliter
+
+        XCTAssertEqual(output.count, effects.count)
+
+        for (expected, calculated) in zip(output, effects) {
+            XCTAssertEqual(expected.startDate, calculated.startDate)
+            XCTAssertEqual(expected.quantity.doubleValue(for: unit), calculated.quantity.doubleValue(for: unit), accuracy: Double(Float.ulpOfOne))
+        }
+    }
+
+    func testMomentumEffectForRisingGlucoseDoubles() {
+        let input = loadInputFixture("momentum_effect_rising_glucose_double_entries_input")
+        let output = loadOutputFixture("momentum_effect_rising_glucose_output")
+
+        let effects = input.linearMomentumEffect(duration: .minutes(30))
+        let unit = LoopUnit.milligramsPerDeciliter
+
+        XCTAssertEqual(output.count, effects.count)
+
+        for (expected, calculated) in zip(output, effects) {
+            XCTAssertEqual(expected.startDate, calculated.startDate)
+            XCTAssertEqual(expected.quantity.doubleValue(for: unit), calculated.quantity.doubleValue(for: unit), accuracy: Double(Float.ulpOfOne))
+        }
+    }
+
+    func testMomentumEffectForFallingGlucose() {
+        let input = loadInputFixture("momentum_effect_falling_glucose_input")
+        let output = loadOutputFixture("momentum_effect_falling_glucose_output")
+
+        let effects = input.linearMomentumEffect(duration: .minutes(30))
+        let unit = LoopUnit.milligramsPerDeciliter
+
+        XCTAssertEqual(output.count, effects.count)
+
+        for (expected, calculated) in zip(output, effects) {
+            XCTAssertEqual(expected.startDate, calculated.startDate)
+            XCTAssertEqual(expected.quantity.doubleValue(for: unit), calculated.quantity.doubleValue(for: unit), accuracy: Double(Float.ulpOfOne))
+        }
+    }
+
+    func testMomentumEffectForFallingGlucoseDuplicates() {
+        var input = loadInputFixture("momentum_effect_falling_glucose_input")
+        let output = loadOutputFixture("momentum_effect_falling_glucose_output")
+        input.append(contentsOf: input)
+        input.sort(by: <)
+
+        let effects = input.linearMomentumEffect(duration: .minutes(30))
+        let unit = LoopUnit.milligramsPerDeciliter
+
+        XCTAssertEqual(output.count, effects.count)
+
+        for (expected, calculated) in zip(output, effects) {
+            XCTAssertEqual(expected.startDate, calculated.startDate)
+            XCTAssertEqual(expected.quantity.doubleValue(for: unit), calculated.quantity.doubleValue(for: unit), accuracy: Double(Float.ulpOfOne))
+        }
+    }
+
+    func testMomentumEffectForStableGlucose() {
+        let input = loadInputFixture("momentum_effect_stable_glucose_input")
+        let output = loadOutputFixture("momentum_effect_stable_glucose_output")
+
+        let effects = input.linearMomentumEffect(duration: .minutes(30))
+        let unit = LoopUnit.milligramsPerDeciliter
+
+        XCTAssertEqual(output.count, effects.count)
+
+        for (expected, calculated) in zip(output, effects) {
+            XCTAssertEqual(expected.startDate, calculated.startDate)
+            XCTAssertEqual(expected.quantity.doubleValue(for: unit), calculated.quantity.doubleValue(for: unit), accuracy: Double(Float.ulpOfOne))
+        }
+    }
+
+    func testMomentumEffectForDuplicateGlucose() {
+        let input = loadInputFixture("momentum_effect_duplicate_glucose_input")
+        let effects = input.linearMomentumEffect()
+
+        XCTAssertEqual(0, effects.count)
+    }
+
+    func testMomentumEffectForEmptyGlucose() {
+        let input = [GlucoseFixtureValue]()
+        let effects = input.linearMomentumEffect()
+
+        XCTAssertEqual(0, effects.count)
+    }
+
+    func testMomentumEffectForSpacedOutGlucose() {
+        let input = loadInputFixture("momentum_effect_incomplete_glucose_input")
+        let effects = input.linearMomentumEffect()
+
+        XCTAssertEqual(0, effects.count)
+    }
+
+    func testMomentumEffectForTooFewGlucose() {
+        let input = loadInputFixture("momentum_effect_bouncing_glucose_input")[0...1]
+        let effects = input.linearMomentumEffect()
+
+        XCTAssertEqual(0, effects.count)
+    }
+
+    func testMomentumEffectForDisplayOnlyGlucose() {
+        let input = loadInputFixture("momentum_effect_display_only_glucose_input")
+        let effects = input.linearMomentumEffect()
+
+        XCTAssertEqual(0, effects.count)
+    }
+
+    func testMomentumEffectForMixedProvenanceGlucose() {
+        let input = loadInputFixture("momentum_effect_mixed_provenance_glucose_input")
+        let effects = input.linearMomentumEffect()
+
+        XCTAssertEqual(0, effects.count)
+    }
+
+    func testCounteractionEffectsForFallingGlucose() {
+        let input = loadInputFixture("counteraction_effect_falling_glucose_input")
+        let insulinEffect = loadOutputFixture("counteraction_effect_falling_glucose_insulin")
+        let output = loadEffectVelocityFixture("counteraction_effect_falling_glucose_output")
+
+        let effects = input.counteractionEffects(to: insulinEffect)
+        let unit = LoopUnit.milligramsPerDeciliterPerMinute
+
+        XCTAssertEqual(output.count, effects.count)
+
+        for (expected, calculated) in zip(output, effects) {
+            XCTAssertEqual(expected.startDate, calculated.startDate)
+            XCTAssertEqual(expected.quantity.doubleValue(for: unit), calculated.quantity.doubleValue(for: unit), accuracy: Double(Float.ulpOfOne))
+        }
+    }
+
+    func testCounteractionEffectsForFallingGlucoseDuplicates() {
+        var input = loadInputFixture("counteraction_effect_falling_glucose_input")
+        input.append(contentsOf: input)
+        input.sort(by: <)
+        let insulinEffect = loadOutputFixture("counteraction_effect_falling_glucose_insulin")
+        let output = loadEffectVelocityFixture("counteraction_effect_falling_glucose_output")
+
+        let effects = input.counteractionEffects(to: insulinEffect)
+        let unit = LoopUnit.milligramsPerDeciliterPerMinute
+
+        XCTAssertEqual(output.count, effects.count)
+
+        for (expected, calculated) in zip(output, effects) {
+            XCTAssertEqual(expected.startDate, calculated.startDate)
+            XCTAssertEqual(expected.quantity.doubleValue(for: unit), calculated.quantity.doubleValue(for: unit), accuracy: Double(Float.ulpOfOne))
+        }
+    }
+
+    func testCounteractionEffectsForFallingGlucoseAlmostDuplicates() {
+        let input = loadInputFixture("counteraction_effect_falling_glucose_almost_duplicates_input")
+        let insulinEffect = loadOutputFixture("counteraction_effect_falling_glucose_insulin")
+        let output = loadEffectVelocityFixture("counteraction_effect_falling_glucose_almost_duplicates_output")
+
+        let effects = input.counteractionEffects(to: insulinEffect)
+        let unit = LoopUnit.milligramsPerDeciliterPerMinute
+
+        XCTAssertEqual(output.count, effects.count)
+
+        for (expected, calculated) in zip(output, effects) {
+            XCTAssertEqual(expected.startDate, calculated.startDate)
+            XCTAssertEqual(expected.endDate, calculated.endDate)
+            XCTAssertEqual(expected.quantity.doubleValue(for: unit), calculated.quantity.doubleValue(for: unit), accuracy: Double(Float.ulpOfOne))
+        }
+    }
+
+    func testCounteractionEffectsForNoGlucose() {
+        let input = [GlucoseFixtureValue]()
+        let insulinEffect = loadOutputFixture("counteraction_effect_falling_glucose_insulin")
+        let output = [GlucoseEffectVelocity]()
+
+        let effects = input.counteractionEffects(to: insulinEffect)
+
+        XCTAssertEqual(output.count, effects.count)
+    }
+    
 }

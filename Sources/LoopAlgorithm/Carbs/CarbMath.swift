@@ -709,12 +709,13 @@ extension Collection where Element: CarbEntry {
         let glucoseUnit = LoopUnit.milligramsPerDeciliter
         let carbUnit = LoopUnit.gram
 
-        let builders: [CarbStatusBuilder<Element>] = map { (entry) in
+        let builders: [CarbStatusBuilder<Element>] = compactMap { (entry) in
             guard
                 let entryCarbRatio = carbRatio.closestPrior(to: entry.startDate),
                 let entryInsulinSensitivity = insulinSensitivity.closestPrior(to: entry.startDate) else
             {
-                preconditionFailure("Insulin sensitivity and carb ratio timelines must cover carb entry start dates")
+                assertionFailure("Insulin sensitivity and carb ratio timelines must cover carb entry start dates")
+                return nil
             }
 
             let initialAbsorptionTimeOverrun = initialAbsorptionTimeOverrun

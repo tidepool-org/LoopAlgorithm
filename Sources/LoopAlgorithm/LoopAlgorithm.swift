@@ -352,6 +352,200 @@ public struct LoopAlgorithm {
         )
     }
 
+    /// Generates a forecast using pre-annotated insulin data.
+    ///
+    /// This overload is optimised for multi-step historical sweeps where the
+    /// same dose history is evaluated at many consecutive time points.  By
+    /// accepting a `PrecomputedInsulinInput` the caller can:
+    ///
+    ///   1. **Skip `annotated(with: basal)`** — the most expensive per-step
+    ///      operation (~O(doses × basalSegments)).  Annotate the full window
+    ///      once with `PrecomputedInsulinInput.build(...)`, then slice
+    ///      `annotatedDoses` to the lookback window for each call.
+    ///
+    ///   2. **Skip `glucoseEffects(...)`** — when `precomputedInsulin.insulinEffects`
+    ///      is non-nil the function clips the pre-built effect timeline to the
+    ///      needed range instead of recomputing from scratch.  This is only
+    ///      valid when ISF does not change between steps (i.e. you are NOT
+    ///      sweeping ISF multipliers).
+    ///
+    /// All other effects (carbs, RC, momentum) are computed normally.
+    ///
+    /// - Parameters:
+    ///   - start: The starting time of the glucose prediction.
+    ///   - glucoseHistory: History of glucose values: t-10h to t.
+    ///   - precomputedInsulin: Pre-annotated dose data for this step.  Caller
+    ///     must slice `annotatedDoses` to `[t - insulinLookback, t]` (or
+    ///     `[t - lookback, t + 6h]` for future-insulin mode).
+    ///   - carbEntries: History of carb entries.
+    ///   - sensitivity: ISF timeline — still required for carb + RC effects.
+    ///   - carbRatio: Carb ratio timeline.
+    ///   - algorithmEffectsOptions: Which effects to include.
+    ///   - useIntegralRetrospectiveCorrection: Use integral RC.
+    ///   - includingPositiveVelocityAndRC: Include positive velocity/RC.
+    ///   - useMidAbsorptionISF: Use mid-absorption ISF (ignored when
+    ///     `precomputedInsulin.insulinEffects` is non-nil).
+    ///   - carbAbsorptionModel: Carb absorption model.
+    ///   - gradualTransitionsThreshold: RC smoothness gate (default 40 mg/dL).
+    /// - Returns: A `LoopPrediction` struct.  `dosesRelativeToBasal` is
+    ///   populated from `precomputedInsulin.annotatedDoses`.
+    public static func generatePrediction<CarbType, GlucoseType>(
+        start: Date,
+        glucoseHistory: [GlucoseType],
+        precomputedInsulin: PrecomputedInsulinInput,
+        carbEntries: [CarbType],
+        sensitivity: [AbsoluteScheduleValue<LoopQuantity>],
+        carbRatio: [AbsoluteScheduleValue<Double>],
+        algorithmEffectsOptions: AlgorithmEffectsOptions = .all,
+        useIntegralRetrospectiveCorrection: Bool = false,
+        includingPositiveVelocityAndRC: Bool = true,
+        useMidAbsorptionISF: Bool = false,
+        carbAbsorptionModel: CarbAbsorptionComputable = PiecewiseLinearAbsorption(),
+        gradualTransitionsThreshold: Double? = 40.0
+    ) -> LoopPrediction<CarbType> where CarbType: CarbEntry, GlucoseType: GlucoseSampleValue {
+
+        let dosesRelativeToBasal = precomputedInsulin.annotatedDoses
+        let activeInsulin = dosesRelativeToBasal.insulinOnBoard(at: start)
+
+        // ── Insulin effects ──────────────────────────────────────────────────────
+        // Fast path: clip the pre-computed effect timeline to the needed range.
+        // Slow path: compute from annotated doses (still faster than the full
+        //            overload because annotation is already done).
+        let insulinEffects: [GlucoseEffect]
+        if let prebuilt = precomputedInsulin.insulinEffects {
+            // Use the pre-built effects directly.  Extra entries (outside the
+            // needed range) are harmless; counteractionEffects() and
+            // predictGlucose() only consume entries within their required window.
+            // Pass the full array — callers should pre-build with a generous
+            // `effectsTo` covering the full sweep end + activity duration.
+            insulinEffects = prebuilt
+        } else {
+            var effectsInterval = dosesRelativeToBasal.effectsInterval() ?? DateInterval(start: start, end: start)
+            if let glucoseStart = glucoseHistory.first?.startDate, glucoseStart < effectsInterval.start {
+                effectsInterval = effectsInterval.extendedToInclude(glucoseStart)
+            }
+            if let glucoseEnd = glucoseHistory.last?.endDate, glucoseEnd > effectsInterval.end {
+                effectsInterval = effectsInterval.extendedToInclude(glucoseEnd)
+            }
+            if useMidAbsorptionISF {
+                insulinEffects = dosesRelativeToBasal.glucoseEffectsMidAbsorptionISF(
+                    insulinSensitivityHistory: sensitivity,
+                    from: effectsInterval.start,
+                    to: effectsInterval.end
+                )
+            } else {
+                insulinEffects = dosesRelativeToBasal.glucoseEffects(
+                    insulinSensitivityHistory: sensitivity,
+                    from: effectsInterval.start,
+                    to: effectsInterval.end
+                )
+            }
+        }
+
+        // ── ICE, carbs, RC, momentum — identical to the standard overload ────────
+        let insulinCounteractionEffects = glucoseHistory.counteractionEffects(to: insulinEffects)
+
+        let carbStatus = carbEntries.map(
+            to: insulinCounteractionEffects,
+            carbRatio: carbRatio,
+            insulinSensitivity: sensitivity
+        )
+        let carbEffects = carbStatus.dynamicGlucoseEffects(
+            from: start.addingTimeInterval(-IntegralRetrospectiveCorrection.retrospectionInterval),
+            carbRatios: carbRatio,
+            insulinSensitivities: sensitivity,
+            absorptionModel: carbAbsorptionModel
+        )
+        let activeCarbs = carbStatus.dynamicCarbsOnBoard(at: start, absorptionModel: carbAbsorptionModel)
+
+        let retrospectiveGlucoseDiscrepancies = insulinCounteractionEffects.subtracting(carbEffects)
+        let retrospectiveGlucoseDiscrepanciesSummed = retrospectiveGlucoseDiscrepancies
+            .combinedSums(of: LoopMath.retrospectiveCorrectionGroupingInterval * 1.01)
+
+        let rc: RetrospectiveCorrection = useIntegralRetrospectiveCorrection
+            ? IntegralRetrospectiveCorrection(effectDuration: LoopMath.retrospectiveCorrectionEffectDuration)
+            : StandardRetrospectiveCorrection(effectDuration: LoopMath.retrospectiveCorrectionEffectDuration)
+
+        var prediction: [PredictedGlucoseValue] = []
+        var retrospectiveCorrectionEffects: [GlucoseEffect] = []
+        var momentumEffects: [GlucoseEffect] = []
+        var totalRetrospectiveCorrectionEffect: LoopQuantity?
+
+        if let latestGlucose = glucoseHistory.last {
+            retrospectiveCorrectionEffects = rc.computeEffect(
+                startingAt: latestGlucose,
+                retrospectiveGlucoseDiscrepanciesSummed: retrospectiveGlucoseDiscrepanciesSummed,
+                recencyInterval: TimeInterval(minutes: 15),
+                retrospectiveCorrectionGroupingInterval: LoopMath.retrospectiveCorrectionGroupingInterval
+            )
+            totalRetrospectiveCorrectionEffect = rc.totalGlucoseCorrectionEffect
+
+            var effects = [[GlucoseEffect]]()
+            if algorithmEffectsOptions.contains(.carbs)  { effects.append(carbEffects) }
+            if algorithmEffectsOptions.contains(.insulin) { effects.append(insulinEffects) }
+
+            if algorithmEffectsOptions.contains(.retrospection) {
+                var useRC = true
+                let rcTransitionData = glucoseHistory.filterDateRange(
+                    start.addingTimeInterval(-LoopMath.retrospectiveCorrectionGroupingInterval),
+                    start
+                )
+                if !rcTransitionData.hasGradualTransitions(gradualTransitionThreshold: gradualTransitionsThreshold ?? 40.0) {
+                    useRC = false
+                }
+                if !includingPositiveVelocityAndRC,
+                   let netRC = retrospectiveCorrectionEffects.netEffect(),
+                   netRC.quantity.doubleValue(for: .milligramsPerDeciliter) > 0 {
+                    useRC = false
+                }
+                if useRC { effects.append(retrospectiveCorrectionEffects) }
+            }
+
+            var useMomentum = true
+            if algorithmEffectsOptions.contains(.momentum) {
+                let momentumInputData = glucoseHistory.filterDateRange(
+                    start.addingTimeInterval(-GlucoseMath.momentumDataInterval), start
+                )
+                momentumEffects = momentumInputData.linearMomentumEffect()
+                if !includingPositiveVelocityAndRC,
+                   let netMomentum = momentumEffects.netEffect(),
+                   netMomentum.quantity.doubleValue(for: .milligramsPerDeciliter) > 0 {
+                    useMomentum = false
+                }
+            } else {
+                useMomentum = false
+            }
+
+            prediction = LoopMath.predictGlucose(
+                startingAt: latestGlucose,
+                momentum: useMomentum ? momentumEffects : [],
+                effects: effects
+            )
+
+            let finalDate = start.addingTimeInterval(InsulinMath.defaultInsulinActivityDuration)
+            if let last = prediction.last, last.startDate < finalDate {
+                prediction.append(PredictedGlucoseValue(startDate: finalDate, quantity: last.quantity))
+            }
+        }
+
+        return LoopPrediction(
+            glucose: prediction,
+            effects: LoopAlgorithmEffects(
+                insulin: insulinEffects,
+                carbs: carbEffects,
+                carbStatus: carbStatus,
+                retrospectiveCorrection: retrospectiveCorrectionEffects,
+                momentum: momentumEffects,
+                insulinCounteraction: insulinCounteractionEffects,
+                retrospectiveGlucoseDiscrepancies: retrospectiveGlucoseDiscrepanciesSummed,
+                totalRetrospectiveCorrectionEffect: totalRetrospectiveCorrectionEffect
+            ),
+            dosesRelativeToBasal: dosesRelativeToBasal,
+            activeInsulin: activeInsulin,
+            activeCarbs: activeCarbs
+        )
+    }
+
     // Helper to generate prediction with LoopPredictionInput struct
     public static func generatePrediction<CarbType, GlucoseType, InsulinDoseType>(input: LoopPredictionInput<CarbType, GlucoseType, InsulinDoseType>) -> LoopPrediction<CarbType> {
 

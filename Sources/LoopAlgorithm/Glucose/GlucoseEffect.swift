@@ -8,7 +8,7 @@
 import Foundation
 
 
-public struct GlucoseEffect: GlucoseValue, Equatable {
+public struct GlucoseEffect: GlucoseValue, Equatable, Sendable {
     public let startDate: Date
     public let quantity: LoopQuantity
 

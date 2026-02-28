@@ -30,6 +30,23 @@
 
 import Foundation
 
+// MARK: - Binary search helper
+
+private extension Array {
+    /// Returns the index of the first element where `key` > `date` (after: true)
+    /// or `key` >= `date` (after: false), using binary search.
+    /// Assumes the array is sorted ascending by `key`.
+    func partition<K: Comparable>(index date: K, key: KeyPath<Element, K>, after: Bool) -> Int {
+        var lo = 0, hi = count
+        while lo < hi {
+            let mid = (lo + hi) / 2
+            let k = self[mid][keyPath: key]
+            if after ? k <= date : k < date { lo = mid + 1 } else { hi = mid }
+        }
+        return lo
+    }
+}
+
 // MARK: - PrecomputedInsulinInput
 
 /// Pre-annotated insulin data for use in multi-step prediction sweeps.
@@ -145,6 +162,32 @@ extension PrecomputedInsulinInput {
             )
         }
         return PrecomputedInsulinInput(annotatedDoses: annotatedDoses, insulinEffects: effects)
+    }
+
+    /// Returns a copy with `annotatedDoses` sliced to doses that overlap
+    /// `[from, to]`, and `insulinEffects` unchanged (the full pre-built
+    /// timeline is always passed through — generatePrediction only reads
+    /// the entries it needs).
+    ///
+    /// Use this per evaluation step to pass only the relevant dose window
+    /// into `generatePrediction`, matching what the standard path does when
+    /// it calls `doses.annotated(with: basal)` on the per-step slice.
+    ///
+    /// `annotatedDoses` must be sorted by `startDate`.
+    public func sliced(from: Date, to: Date) -> PrecomputedInsulinInput {
+        // Keep annotated doses that overlap [from, to]:
+        //   dose.startDate <= to  AND  dose.endDate > from
+        //
+        // annotatedDoses is sorted by startDate, so we can binary-search for
+        // the upper bound (first startDate > to) and then linear-scan backward
+        // from there. For the lower bound we use a linear filter on endDate
+        // since the array is NOT sorted by endDate.
+        //
+        // In practice the dose arrays are small (~100-200 entries per 16h
+        // window) so the linear endDate check is negligible.
+        let hiIdx = annotatedDoses.partition(index: to, key: \.startDate, after: false)
+        let slicedDoses = annotatedDoses[0..<hiIdx].filter { $0.endDate > from }
+        return PrecomputedInsulinInput(annotatedDoses: slicedDoses, insulinEffects: insulinEffects)
     }
 
     /// Convenience: annotate and compute effects in one call.

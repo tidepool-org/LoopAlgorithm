@@ -42,11 +42,8 @@ final class PrecomputedInsulinInputTests: XCTestCase {
             useIntegralRetrospectiveCorrection: input.useIntegralRetrospectiveCorrection
         )
 
-        // Pre-annotate once; no pre-built effects → slow inner path for glucoseEffects
-        let precomputed = PrecomputedInsulinInput.build(
-            doses: input.doses,
-            basal: input.basal
-        )
+        // Pre-annotate once (ISF-independent); no effects → standard inner glucoseEffects path
+        let precomputed = PrecomputedInsulinInput.annotate(doses: input.doses, basal: input.basal)
 
         let fast = LoopAlgorithm.generatePrediction(
             start: start,
@@ -93,11 +90,10 @@ final class PrecomputedInsulinInputTests: XCTestCase {
             useIntegralRetrospectiveCorrection: input.useIntegralRetrospectiveCorrection
         )
 
-        let precomputed = PrecomputedInsulinInput.build(
-            doses: input.doses,
-            basal: input.basal,
-            sensitivity: input.sensitivity
-        )
+        // ISF-sweep pattern: annotate once, compute effects per ISF value
+        let precomputed = PrecomputedInsulinInput
+            .annotate(doses: input.doses, basal: input.basal)
+            .withEffects(sensitivity: input.sensitivity)
 
         let fast = LoopAlgorithm.generatePrediction(
             start: start,
@@ -132,8 +128,7 @@ final class PrecomputedInsulinInputTests: XCTestCase {
         )
 
         // Simulate EvalCore: build once, then pass the (unsliced) annotated set
-        let full = PrecomputedInsulinInput.build(doses: input.doses, basal: input.basal)
-        let sliced = PrecomputedInsulinInput(annotatedDoses: full.annotatedDoses)
+        let sliced = PrecomputedInsulinInput.annotate(doses: input.doses, basal: input.basal)
 
         let fromSlice = LoopAlgorithm.generatePrediction(
             start: start,
@@ -151,6 +146,70 @@ final class PrecomputedInsulinInputTests: XCTestCase {
                 f.quantity.doubleValue(for: .milligramsPerDeciliter),
                 accuracy: 0.001
             )
+        }
+    }
+
+    // MARK: - Test: ISF sweep pattern — annotate once, withEffects per multiplier
+
+    func testISFSweepPattern() throws {
+        let input = try loadInput()
+        let start = input.glucoseHistory.last!.startDate
+
+        // Annotate ONCE — shared across all ISF values
+        let base = PrecomputedInsulinInput.annotate(doses: input.doses, basal: input.basal)
+
+        let multipliers: [Double] = [0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3]
+
+        for multiplier in multipliers {
+            // Scale ISF — O(n_isf_segments), negligible.
+            // Preserve whatever unit the fixture uses by scaling the raw double
+            // and re-wrapping in the same unit.
+            let scaledSensitivity = input.sensitivity.map { entry -> AbsoluteScheduleValue<LoopQuantity> in
+                let unit = entry.value.unit
+                let scaled = entry.value.doubleValue(for: unit) * multiplier
+                return AbsoluteScheduleValue(
+                    startDate: entry.startDate,
+                    endDate: entry.endDate,
+                    value: LoopQuantity(unit: unit, doubleValue: scaled)
+                )
+            }
+
+            // Compute effects once for this ISF value — O(D × T), not per-step
+            let precomputed = base.withEffects(sensitivity: scaledSensitivity)
+            XCTAssertNotNil(precomputed.insulinEffects, "withEffects should populate insulinEffects")
+
+            // Verify it produces the same result as the standard path with the same scaled ISF
+            let standard = LoopAlgorithm.generatePrediction(
+                start: start,
+                glucoseHistory: input.glucoseHistory,
+                doses: input.doses,
+                carbEntries: input.carbEntries,
+                basal: input.basal,
+                sensitivity: scaledSensitivity,
+                carbRatio: input.carbRatio,
+                useIntegralRetrospectiveCorrection: input.useIntegralRetrospectiveCorrection
+            )
+
+            let fast = LoopAlgorithm.generatePrediction(
+                start: start,
+                glucoseHistory: input.glucoseHistory,
+                precomputedInsulin: precomputed,
+                carbEntries: input.carbEntries,
+                sensitivity: scaledSensitivity,
+                carbRatio: input.carbRatio,
+                useIntegralRetrospectiveCorrection: input.useIntegralRetrospectiveCorrection
+            )
+
+            XCTAssertEqual(standard.glucose.count, fast.glucose.count,
+                           "Count mismatch at ISF multiplier \(multiplier)")
+            for (s, f) in zip(standard.glucose, fast.glucose) {
+                XCTAssertEqual(
+                    s.quantity.doubleValue(for: .milligramsPerDeciliter),
+                    f.quantity.doubleValue(for: .milligramsPerDeciliter),
+                    accuracy: 0.001,
+                    "ISF \(multiplier)×: mismatch at \(s.startDate)"
+                )
+            }
         }
     }
 }

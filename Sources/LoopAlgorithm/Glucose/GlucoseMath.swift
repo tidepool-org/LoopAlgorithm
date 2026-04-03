@@ -153,6 +153,73 @@ extension BidirectionalCollection where Element: GlucoseSampleValue, Index == In
 
         return values
     }
+
+    /// Computes a momentum effect using an asymmetric EMA on instantaneous velocity.
+    ///
+    /// Builds positive momentum slowly (using `alphaSlow`) and sheds it quickly
+    /// whenever a single reading shows a velocity drop (using `alphaFast`).
+    /// This makes the algorithm conservative about assuming BG will keep rising,
+    /// while responding immediately to any signal that it is levelling off or falling.
+    ///
+    /// - Parameters:
+    ///   - duration: Projection duration. Default: `momentumDuration`.
+    ///   - delta: Time step for projected effects. Default: `defaultDelta`.
+    ///   - velocityMaximum: Hard cap on velocity. Default: 4 mg/dL/min.
+    ///   - alphaSlow: EMA weight when velocity is rising (0–1). Default: 0.15.
+    ///   - alphaFast: EMA weight when velocity is falling (0–1). Default: 0.85.
+    /// - Returns: An array of projected glucose effects.
+    public func asymmetricMomentumEffect(
+        duration: TimeInterval = GlucoseMath.momentumDuration,
+        delta: TimeInterval = GlucoseMath.defaultDelta,
+        velocityMaximum: LoopQuantity? = nil,
+        alphaSlow: Double = 0.15,
+        alphaFast: Double = 0.85
+    ) -> [GlucoseEffect] {
+
+        let velocityMax = velocityMaximum ?? LoopQuantity(unit: .milligramsPerDeciliterPerMinute, doubleValue: 4.0)
+
+        guard
+            self.count > 2,
+            hasGradualTransitions() && isContinuous() && !containsCalibrations() && hasSingleProvenance,
+            let lastSample = self.last,
+            let (startDate, endDate) = LoopMath.simulationDateRangeForSamples([lastSample], duration: duration, delta: delta)
+        else {
+            return []
+        }
+
+        let unit = LoopUnit.milligramsPerDeciliter
+        let sorted = self.sorted { $0.startDate < $1.startDate }
+
+        // Build asymmetric EMA over instantaneous velocities (mg/dL/sec)
+        var smoothed: Double? = nil
+        for i in 1 ..< sorted.count {
+            let dt = sorted[i].startDate.timeIntervalSince(sorted[i - 1].startDate)
+            guard dt > 0 else { continue }
+            let instantV = (sorted[i].quantity.doubleValue(for: unit)
+                            - sorted[i - 1].quantity.doubleValue(for: unit)) / dt
+            if let prev = smoothed {
+                let alpha = instantV < prev ? alphaFast : alphaSlow
+                smoothed = alpha * instantV + (1.0 - alpha) * prev
+            } else {
+                smoothed = instantV
+            }
+        }
+
+        guard let velocity = smoothed, velocity.isFinite else { return [] }
+
+        let cappedVelocity = Swift.min(velocity, velocityMax.doubleValue(for: .milligramsPerDeciliterPerSecond))
+
+        var date = startDate
+        var values = [GlucoseEffect]()
+        repeat {
+            let value = Swift.max(0, date.timeIntervalSince(lastSample.startDate)) * cappedVelocity
+            values.append(GlucoseEffect(startDate: date, quantity: LoopQuantity(unit: unit, doubleValue: value)))
+            date = date.addingTimeInterval(delta)
+        } while date <= endDate
+
+        return values
+    }
+
 }
 
 

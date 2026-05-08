@@ -220,6 +220,70 @@ extension BidirectionalCollection where Element: GlucoseSampleValue, Index == In
         return values
     }
 
+    /// Hybrid momentum: standard linear regression on rises/steady, fast EMA on drops.
+    ///
+    /// Designed to keep positive-direction response identical to normal Loop's
+    /// `linearMomentumEffect` while reacting quickly when the latest instantaneous
+    /// velocity falls below the regression-implied slope (momentum is dropping).
+    ///
+    /// - Parameters:
+    ///   - alphaFast: Mixing weight on latest instantV when momentum is dropping
+    ///                (1.0 = use latest only; 0 = ignore drop). Default 0.85.
+    public func hybridAsymmetricMomentumEffect(
+        duration: TimeInterval = GlucoseMath.momentumDuration,
+        delta: TimeInterval = GlucoseMath.defaultDelta,
+        velocityMaximum: LoopQuantity? = nil,
+        alphaFast: Double = 0.85
+    ) -> [GlucoseEffect] {
+
+        let velocityMax = velocityMaximum ?? LoopQuantity(unit: .milligramsPerDeciliterPerMinute, doubleValue: 4.0)
+
+        guard
+            self.count > 2,
+            hasGradualTransitions() && isContinuous() && !containsCalibrations() && hasSingleProvenance,
+            let firstSample = self.first,
+            let lastSample = self.last,
+            let (startDate, endDate) = LoopMath.simulationDateRangeForSamples([lastSample], duration: duration, delta: delta)
+        else {
+            return []
+        }
+
+        let unit = LoopUnit.milligramsPerDeciliter
+        let sorted = self.sorted { $0.startDate < $1.startDate }
+
+        let (slope: regressionSlope, intercept: _) = sorted.map { (
+            x: $0.startDate.timeIntervalSince(firstSample.startDate),
+            y: $0.quantity.doubleValue(for: unit)
+        ) }.linearRegression()
+
+        guard regressionSlope.isFinite, sorted.count >= 2 else { return [] }
+
+        let n = sorted.count
+        let dtLast = sorted[n - 1].startDate.timeIntervalSince(sorted[n - 2].startDate)
+        guard dtLast > 0 else { return [] }
+        let latestInstantV = (sorted[n - 1].quantity.doubleValue(for: unit)
+                              - sorted[n - 2].quantity.doubleValue(for: unit)) / dtLast
+
+        let chosenSlope: Double
+        if latestInstantV < regressionSlope {
+            chosenSlope = alphaFast * latestInstantV + (1.0 - alphaFast) * regressionSlope
+        } else {
+            chosenSlope = regressionSlope
+        }
+
+        let limitedSlope = Swift.min(chosenSlope, velocityMax.doubleValue(for: .milligramsPerDeciliterPerSecond))
+
+        var date = startDate
+        var values = [GlucoseEffect]()
+        repeat {
+            let value = Swift.max(0, date.timeIntervalSince(lastSample.startDate)) * limitedSlope
+            values.append(GlucoseEffect(startDate: date, quantity: LoopQuantity(unit: unit, doubleValue: value)))
+            date = date.addingTimeInterval(delta)
+        } while date <= endDate
+
+        return values
+    }
+
 }
 
 

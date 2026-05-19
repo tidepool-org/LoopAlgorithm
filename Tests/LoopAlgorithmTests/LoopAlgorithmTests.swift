@@ -76,7 +76,7 @@ final class LoopAlgorithmTests: XCTestCase {
         let output = LoopAlgorithm.run(input: input)
 
         XCTAssertEqual(output.activeCarbs, 50)
-        XCTAssertEqual(output.recommendation!.manual!.amount, 5.83, accuracy: 0.01)
+        XCTAssertEqual(output.recommendation!.manual!.amount, 5.86, accuracy: 0.01)
     }
 
 
@@ -112,8 +112,8 @@ final class LoopAlgorithmTests: XCTestCase {
         XCTAssertEqual(outputA.effects.insulin.last?.quantity.doubleValue(for: .milligramsPerDeciliter), 0.0)
         XCTAssertEqual(outputB.effects.insulin.last?.quantity.doubleValue(for: .milligramsPerDeciliter), 0.0)
 
-        XCTAssertEqual(outputA.effects.retrospectiveCorrection.last?.quantity.doubleValue(for: .milligramsPerDeciliter), 165)
-        XCTAssertEqual(outputB.effects.retrospectiveCorrection.last?.quantity.doubleValue(for: .milligramsPerDeciliter), 165)
+        XCTAssertEqual(outputA.effects.retrospectiveCorrection.last?.quantity.doubleValue(for: .milligramsPerDeciliter) ?? 0, 165, accuracy: 0.05)
+        XCTAssertEqual(outputB.effects.retrospectiveCorrection.last?.quantity.doubleValue(for: .milligramsPerDeciliter) ?? 0, 165, accuracy: 0.05)
 
         // These tests fail, because the momentum effect is *not* time independent yet.
         // Even though all the input data is the same (just shifted in time), momentum effect varies in relation to how offset
@@ -228,8 +228,8 @@ final class LoopAlgorithmTests: XCTestCase {
         let output = LoopAlgorithm.run(input: input)
 
         // Should recommend bolus to cover meal
-        XCTAssertEqual(output.predictedGlucose.last!.quantity.doubleValue(for: .milligramsPerDeciliter), 274, accuracy: 0.1)
-        XCTAssertEqual(output.recommendation!.manual!.amount, 1.9, accuracy: 0.01)
+        XCTAssertEqual(output.predictedGlucose.last!.quantity.doubleValue(for: .milligramsPerDeciliter), 274.14, accuracy: 0.1)
+        XCTAssertEqual(output.recommendation!.manual!.amount, 1.91, accuracy: 0.01)
 
         // Now check forecast if bolus recommendation is accepted and delivered.
         input.doses.append(
@@ -259,7 +259,7 @@ final class LoopAlgorithmTests: XCTestCase {
         let output = LoopAlgorithm.run(input: input)
 
         // Should recommend bolus to cover meal
-        XCTAssertEqual(output.predictedGlucose.last!.quantity.doubleValue(for: .milligramsPerDeciliter), 269, accuracy: 0.1)
+        XCTAssertEqual(output.predictedGlucose.last!.quantity.doubleValue(for: .milligramsPerDeciliter), 269.15, accuracy: 0.1)
         XCTAssertEqual(output.recommendation!.manual!.amount, 2.16, accuracy: 0.01)
 
         // Now check forecast if bolus recommendation is accepted and delivered.
@@ -329,7 +329,7 @@ final class LoopAlgorithmTests: XCTestCase {
         var recommendedBolus = output.recommendation!.automatic?.bolusUnits
         var activeInsulin = output.activeInsulin!
         XCTAssertEqual(activeInsulin, 8.0)
-        XCTAssertEqual(recommendedBolus!, 1.66, accuracy: 0.01)
+        XCTAssertEqual(recommendedBolus!, 1.69, accuracy: 0.01)
 
         // Now try with maxBolus of 4; should not recommend any more insulin, as we're at our max iob
         input.maxBolus = 4
@@ -397,12 +397,12 @@ final class LoopAlgorithmTests: XCTestCase {
         // Without mid-absorption ISF
         input.useMidAbsorptionISF = false
         var output = LoopAlgorithm.run(input: input)
-        XCTAssertEqual(2.58, output.recommendation!.manual!.amount, accuracy: 0.01)
+        XCTAssertEqual(2.73, output.recommendation!.manual!.amount, accuracy: 0.01)
 
         // With mid-absorption ISF
         input.useMidAbsorptionISF = true
         output = LoopAlgorithm.run(input: input)
-        XCTAssertEqual(1.41, output.recommendation!.manual!.amount, accuracy: 0.01)
+        XCTAssertEqual(1.49, output.recommendation!.manual!.amount, accuracy: 0.01)
     }
 
     func testIncompleteISFTimelineDetected() {

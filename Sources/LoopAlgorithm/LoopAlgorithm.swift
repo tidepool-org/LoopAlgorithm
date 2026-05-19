@@ -179,7 +179,16 @@ public struct LoopAlgorithm {
         includingPositiveVelocityAndRC: Bool = true,
         useMidAbsorptionISF: Bool = false,
         carbAbsorptionModel: CarbAbsorptionComputable = PiecewiseLinearAbsorption(),
-        gradualTransitionsThreshold: Double? = 40.0
+        gradualTransitionsThreshold: Double? = 40.0,
+        // Phase 1: optional separate sensitivity schedule for the EGP-credit
+        // component of insulin effects (the contribution from negative
+        // `netBasalUnits`). When nil (default), `sensitivity` is used for
+        // both the active-insulin and EGP-credit components — bit-identical
+        // to the prior single-schedule behavior. Pass a separate schedule
+        // when an override (e.g. exercise) should scale active-insulin
+        // sensitivity without amplifying the model's implicit EGP-credit
+        // assumption. See [[project_loopalgo_active_insulin_egp_decomposition]].
+        egpSensitivity: [AbsoluteScheduleValue<LoopQuantity>]? = nil
     ) -> LoopPrediction<CarbType> where CarbType: CarbEntry, GlucoseType: GlucoseSampleValue, InsulinDoseType: InsulinDose {
 
         var prediction: [PredictedGlucoseValue] = []
@@ -217,11 +226,13 @@ public struct LoopAlgorithm {
             if useMidAbsorptionISF {
                 insulinEffects = dosesRelativeToBasal.glucoseEffectsMidAbsorptionISF(
                     insulinSensitivityHistory: sensitivity,
+                    egpSensitivityHistory: egpSensitivity,
                     from: insulinEffectsInterval.start,
                     to: insulinEffectsInterval.end)
             } else {
                 insulinEffects = dosesRelativeToBasal.glucoseEffects(
                     insulinSensitivityHistory: sensitivity,
+                    egpSensitivityHistory: egpSensitivity,
                     from: insulinEffectsInterval.start,
                     to: insulinEffectsInterval.end)
             }

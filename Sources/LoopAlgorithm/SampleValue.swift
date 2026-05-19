@@ -98,3 +98,40 @@ public extension Sequence where Element: TimelineValue {
         return filterDateRange(interval.start, interval.end)
     }
 }
+
+/// Fast binary-search filter for ordered timeline arrays. Picks up when the
+/// collection conforms to RandomAccessCollection with Int index (i.e. Array)
+/// and the elements are sorted by startDate (which is the contract for all
+/// schedule arrays — sensitivity / basal / carb-ratio / target — across this
+/// codebase). Reduces filterDateRange from O(N) to O(log N) per call.
+///
+/// LoopEval sims with per-step ISF schedules (`--candidate-isf-csv`) call
+/// filterDateRange ~1.5M times on a 60-day window; this dropped sim time
+/// from ~30 min to ~2 min on that workload.
+public extension RandomAccessCollection where Element: TimelineValue, Index == Int {
+    func filterDateRange(_ startDate: Date?, _ endDate: Date?) -> [Element] {
+        guard !isEmpty else { return [] }
+        // Lower bound: first index where element.endDate >= startDate
+        var lo = startIndex
+        if let startDate {
+            var l = startIndex, r = endIndex
+            while l < r {
+                let m = (l + r) / 2
+                if self[m].endDate < startDate { l = m + 1 } else { r = m }
+            }
+            lo = l
+        }
+        // Upper bound: first index where element.startDate > endDate
+        var hi = endIndex
+        if let endDate {
+            var l = lo, r = endIndex
+            while l < r {
+                let m = (l + r) / 2
+                if self[m].startDate <= endDate { l = m + 1 } else { r = m }
+            }
+            hi = l
+        }
+        guard lo < hi else { return [] }
+        return Array(self[lo..<hi])
+    }
+}

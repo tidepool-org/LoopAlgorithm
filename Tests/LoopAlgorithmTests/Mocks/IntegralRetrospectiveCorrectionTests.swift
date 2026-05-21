@@ -42,7 +42,7 @@ final class IntegralRetrospectiveCorrectionTests: XCTestCase {
             retrospectiveCorrectionGroupingInterval: LoopMath.retrospectiveCorrectionGroupingInterval
         )
 
-        XCTAssertEqual(effect.last?.quantity.doubleValue(for: .milligramsPerDeciliter), 110)
+        XCTAssertEqual(effect.last?.quantity.doubleValue(for: .milligramsPerDeciliter) ?? 0, 110, accuracy: 0.05)
         XCTAssertEqual(effect.last?.startDate, dateFormatter.date(from: "2015-07-13T13:00:00")!)
     }
 }

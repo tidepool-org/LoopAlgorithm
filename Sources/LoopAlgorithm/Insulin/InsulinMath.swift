@@ -18,21 +18,31 @@ extension BasalRelativeDose {
     private func continuousDeliveryInsulinOnBoard(at date: Date, delta: TimeInterval) -> Double {
         let doseDuration = endDate.timeIntervalSince(startDate)  // t1
         let time = date.timeIntervalSince(startDate)
+
+        guard doseDuration > 0 else {
+            return insulinModel.percentEffectRemaining(at: time)
+        }
+
+        // Integrate the delivered fraction of the dose up to `time`, in `delta`
+        // steps. Previously the loop's upper bound was quantized to the delta
+        // grid (`floor((time + delay) / delta) * delta`), so a whole chunk was
+        // added discontinuously each time `time` crossed a delta boundary —
+        // producing a delta-scale ripple in IOB for any segment longer than one
+        // delta (i.e. essentially every real temp basal / suspend). Integrating
+        // up to `time` and weighting a partial final chunk by delivery-so-far
+        // makes IOB continuous. Each chunk's remaining-effect is sampled at its
+        // midpoint (a midpoint Riemann sum), which converges to the continuous
+        // integral without stepping.
         var iob: Double = 0
+        let upper = min(time, doseDuration)
         var doseDate = TimeInterval(0)  // i
-
-        repeat {
-            let segment: Double
-
-            if doseDuration > 0 {
-                segment = max(0, min(doseDate + delta, doseDuration) - doseDate) / doseDuration
-            } else {
-                segment = 1
-            }
-
-            iob += segment * insulinModel.percentEffectRemaining(at: time - doseDate)
+        while doseDate < upper {
+            let chunkEnd = min(doseDate + delta, upper)
+            let segment = (chunkEnd - doseDate) / doseDuration
+            let mid = (doseDate + chunkEnd) / 2
+            iob += segment * insulinModel.percentEffectRemaining(at: time - mid)
             doseDate += delta
-        } while doseDate <= min(floor((time + insulinModel.delay) / delta) * delta, doseDuration)
+        }
 
         return iob
     }

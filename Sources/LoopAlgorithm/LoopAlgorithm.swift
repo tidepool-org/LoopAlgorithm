@@ -174,6 +174,10 @@ public struct LoopAlgorithm {
         basal: [AbsoluteScheduleValue<Double>],
         sensitivity: [AbsoluteScheduleValue<LoopQuantity>],
         carbRatio: [AbsoluteScheduleValue<Double>],
+        // Correction-range timeline — used only to clamp the IntegralRC integral term
+        // (deployed-LoopKit safety bound). nil ⇒ IRC clamp skipped (legacy unclamped
+        // behavior). `run()` always passes `input.target`, so deployed dosing is clamped.
+        target: GlucoseRangeTimeline? = nil,
         algorithmEffectsOptions: AlgorithmEffectsOptions = .all,
         useIntegralRetrospectiveCorrection: Bool = false,
         includingPositiveVelocityAndRC: Bool = true,
@@ -262,10 +266,18 @@ public struct LoopAlgorithm {
         }
 
         if let latestGlucose = glucoseHistory.last {
+            // Inputs for the IntegralRC integral-correction clamp (deployed-LoopKit safety
+            // bound). nil target ⇒ clamp skipped (legacy unclamped behavior).
+            let clampISF = sensitivity.closestPrior(to: start)?.value
+            let clampBasal = basal.closestPrior(to: start)?.value
+            let clampRange = target?.closestPrior(to: start)?.value
             retrospectiveCorrectionEffects = rc.computeEffect(
                 startingAt: latestGlucose,
                 retrospectiveGlucoseDiscrepanciesSummed: retrospectiveGlucoseDiscrepanciesSummed,
                 recencyInterval: TimeInterval(minutes: 15),
+                insulinSensitivity: clampISF,
+                basalRate: clampBasal,
+                correctionRange: clampRange,
                 retrospectiveCorrectionGroupingInterval: LoopMath.retrospectiveCorrectionGroupingInterval
             )
 
@@ -397,6 +409,12 @@ public struct LoopAlgorithm {
         carbEntries: [CarbType],
         sensitivity: [AbsoluteScheduleValue<LoopQuantity>],
         carbRatio: [AbsoluteScheduleValue<Double>],
+        // Correction-range timeline + scheduled basal rate — used only to clamp the
+        // IntegralRC integral term (deployed-LoopKit safety bound). This overload has no
+        // basal schedule (insulin is precomputed), so the scheduled basal rate at the
+        // decision time is passed in. nil target ⇒ IRC clamp skipped (legacy behavior).
+        target: GlucoseRangeTimeline? = nil,
+        scheduledBasalRate: Double? = nil,
         algorithmEffectsOptions: AlgorithmEffectsOptions = .all,
         useIntegralRetrospectiveCorrection: Bool = false,
         includingPositiveVelocityAndRC: Bool = true,
@@ -474,10 +492,18 @@ public struct LoopAlgorithm {
         var totalRetrospectiveCorrectionEffect: LoopQuantity?
 
         if let latestGlucose = glucoseHistory.last {
+            // Inputs for the IntegralRC integral-correction clamp (deployed-LoopKit safety
+            // bound). This overload has no basal schedule (insulin is precomputed), so the
+            // scheduled basal rate is passed in. nil target/basal ⇒ clamp skipped.
+            let clampISF = sensitivity.closestPrior(to: start)?.value
+            let clampRange = target?.closestPrior(to: start)?.value
             retrospectiveCorrectionEffects = rc.computeEffect(
                 startingAt: latestGlucose,
                 retrospectiveGlucoseDiscrepanciesSummed: retrospectiveGlucoseDiscrepanciesSummed,
                 recencyInterval: TimeInterval(minutes: 15),
+                insulinSensitivity: clampISF,
+                basalRate: scheduledBasalRate,
+                correctionRange: clampRange,
                 retrospectiveCorrectionGroupingInterval: LoopMath.retrospectiveCorrectionGroupingInterval
             )
             totalRetrospectiveCorrectionEffect = rc.totalGlucoseCorrectionEffect
@@ -559,6 +585,9 @@ public struct LoopAlgorithm {
             basal: input.basal,
             sensitivity: input.sensitivity,
             carbRatio: input.carbRatio,
+            // Note: LoopPredictionInput carries no correction range, so the IntegralRC
+            // clamp is skipped for pure-prediction use. The deployed dosing path (run(),
+            // below) passes `input.target`, so its IntegralRC IS clamped.
             algorithmEffectsOptions: input.algorithmEffectsOptions,
             useIntegralRetrospectiveCorrection: input.useIntegralRetrospectiveCorrection,
             carbAbsorptionModel: input.carbAbsorptionModel.model,
@@ -741,6 +770,9 @@ public struct LoopAlgorithm {
                 basal: input.basal,
                 sensitivity: input.sensitivity,
                 carbRatio: input.carbRatio,
+                // Correction range for the IntegralRC integral-correction clamp
+                // (deployed-LoopKit safety bound).
+                target: input.target,
                 algorithmEffectsOptions: .all,
                 useIntegralRetrospectiveCorrection: input.useIntegralRetrospectiveCorrection,
                 includingPositiveVelocityAndRC: input.includePositiveVelocityAndRC,

@@ -31,6 +31,11 @@ public class StandardRetrospectiveCorrection: RetrospectiveCorrection {
         startingAt startingGlucose: GlucoseValue,
         retrospectiveGlucoseDiscrepanciesSummed: [GlucoseChange]?,
         recencyInterval: TimeInterval,
+        // Standard RC has no integral term to bound, so these are accepted for
+        // protocol conformance and ignored.
+        insulinSensitivity: LoopQuantity? = nil,
+        basalRate: Double? = nil,
+        correctionRange: ClosedRange<LoopQuantity>? = nil,
         retrospectiveCorrectionGroupingInterval: TimeInterval
     ) -> [GlucoseEffect] {
         // Last discrepancy should be recent, otherwise clear the effect and return

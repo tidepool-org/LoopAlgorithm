@@ -75,6 +75,13 @@ public class IntegralRetrospectiveCorrection: RetrospectiveCorrection {
         startingAt startingGlucose: GlucoseValue,
         retrospectiveGlucoseDiscrepanciesSummed: [GlucoseChange]?,
         recencyInterval: TimeInterval,
+        // Inputs for the integral-correction clamp — the deployed-LoopKit safety bound
+        // that was dropped in the LoopAlgorithm port. When all three are supplied the
+        // integral term is clamped exactly as deployed Loop does; when any is nil the
+        // clamp is skipped (legacy unclamped behavior).
+        insulinSensitivity: LoopQuantity? = nil,
+        basalRate: Double? = nil,
+        correctionRange: ClosedRange<LoopQuantity>? = nil,
         retrospectiveCorrectionGroupingInterval: TimeInterval
         ) -> [GlucoseEffect] {
         
@@ -128,6 +135,30 @@ public class IntegralRetrospectiveCorrection: RetrospectiveCorrection {
                     IntegralRetrospectiveCorrection.integralGain * discrepancy
                 integralCorrectionEffectMinutes += 2.0 * IntegralRetrospectiveCorrection.delta.minutes
             }
+
+            // Integral-correction clamp (deployed-LoopKit safety bound, restored). Bounds
+            // the wound-up integral by an ISF×basal-scaled, target-relative window so it
+            // can't drive the forecast into over-/under-dosing:
+            //   (+) limit: between 1× and 4× zeroTempEffect, larger the further BG is above
+            //       the correction-range top (more time/room to correct a real high).
+            //   (−) limit: at most ~(glucose − rangeMin) below target (10 mg/dL floor),
+            //       capping over-suspension.
+            // Applied only when the controller's ISF/basal/correction-range at decision
+            // time are supplied (any nil ⇒ legacy unclamped behavior).
+            if let insulinSensitivity, let basalRate, let correctionRange {
+                let correctionRangeMin = correctionRange.lowerBound.doubleValue(for: unit)
+                let correctionRangeMax = correctionRange.upperBound.doubleValue(for: unit)
+                let latestGlucoseValue = startingGlucose.quantity.doubleValue(for: unit)
+                let glucoseError = latestGlucoseValue - correctionRangeMax
+                let zeroTempEffect = abs(insulinSensitivity.doubleValue(for: unit) * basalRate)
+                // Limit for (+) integral effect: between 1× and 4× zeroTempEffect
+                let integralEffectPositiveLimit = min(max(glucoseError, 1.0 * zeroTempEffect), 4.0 * zeroTempEffect)
+                // Limit for (−) integral effect: glucose prediction reduced by no more than
+                // 10 mg/dL below the correction range minimum
+                let integralEffectNegativeLimit = -max(10.0, latestGlucoseValue - correctionRangeMin)
+                integralCorrection = min(max(integralCorrection, integralEffectNegativeLimit), integralEffectPositiveLimit)
+            }
+
             // Limit effect duration
             integralCorrectionEffectMinutes = min(integralCorrectionEffectMinutes, IntegralRetrospectiveCorrection.maximumCorrectionEffectDuration.minutes)
             

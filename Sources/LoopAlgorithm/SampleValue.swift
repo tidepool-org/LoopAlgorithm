@@ -111,6 +111,13 @@ public extension Sequence where Element: TimelineValue {
 public extension RandomAccessCollection where Element: TimelineValue, Index == Int {
     func filterDateRange(_ startDate: Date?, _ endDate: Date?) -> [Element] {
         guard !isEmpty else { return [] }
+        // This binary-search filter is only correct when the elements are sorted
+        // ascending by startDate. Catch contract violations in debug builds; the
+        // check is compiled out of release builds, so there is no runtime cost.
+        assert(
+            zip(self, dropFirst()).allSatisfy { $0.startDate <= $1.startDate },
+            "filterDateRange requires elements sorted ascending by startDate"
+        )
         // Lower bound: first index where element.endDate >= startDate
         var lo = startIndex
         if let startDate {

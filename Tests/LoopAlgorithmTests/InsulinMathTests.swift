@@ -237,17 +237,10 @@ class InsulinMathTests: XCTestCase {
             )
         ]
 
+        // A well-formed basal schedule: sorted ascending, contiguous, and non-overlapping.
         let basal = [
             AbsoluteScheduleValue(
                 startDate: startDate,
-                endDate: dateFormatter.date(from: "2015-10-15T20:30:00")!,
-                value: 1.0),
-            AbsoluteScheduleValue(
-                startDate: dateFormatter.date(from: "2015-10-15T20:30:00")!,
-                endDate: dateFormatter.date(from: "2015-10-15T21:00:00")!,
-                value: 0.8),
-            AbsoluteScheduleValue(
-                startDate: dateFormatter.date(from: "2015-10-15T21:00:00")!,
                 endDate: dateFormatter.date(from: "2015-10-15T18:30:00")!,
                 value: 1.0),
             AbsoluteScheduleValue(
@@ -256,6 +249,14 @@ class InsulinMathTests: XCTestCase {
                 value: 0.8),
             AbsoluteScheduleValue(
                 startDate: dateFormatter.date(from: "2015-10-15T19:00:00")!,
+                endDate: dateFormatter.date(from: "2015-10-15T20:30:00")!,
+                value: 1.0),
+            AbsoluteScheduleValue(
+                startDate: dateFormatter.date(from: "2015-10-15T20:30:00")!,
+                endDate: dateFormatter.date(from: "2015-10-15T21:00:00")!,
+                value: 0.8),
+            AbsoluteScheduleValue(
+                startDate: dateFormatter.date(from: "2015-10-15T21:00:00")!,
                 endDate: endDate,
                 value: 1.0),
         ]

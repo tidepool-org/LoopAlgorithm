@@ -45,20 +45,36 @@ public class IntegralRetrospectiveCorrection: RetrospectiveCorrection {
     static let integralGain: Double = ((1 - integralForget) / integralForget) *
         (persistentDiscrepancyGain - currentDiscrepancyGain)
     static let proportionalGain: Double = currentDiscrepancyGain - integralGain
-    
+
+    /// Default ceiling on the RC correction rate. Bounds how fast the integral RC may bend
+    /// the forecast, so a large or spurious sustained discrepancy can't wind the correction
+    /// up into over-/under-dosing. Chosen at the top of physiologically-plausible *sustained*
+    /// unmodeled glucose velocity (~4 mg/dL/min); unlike a bound scaled by ISF/basal/target,
+    /// it does not depend on the user's dosing settings — the plausible velocity of unmodeled
+    /// physiology is the same regardless of a person's insulin needs or target range.
+    public static let defaultMaxCorrectionVelocity = LoopQuantity(
+        unit: .milligramsPerDeciliterPerSecond, doubleValue: 4.0 / 60.0)
+
+    /// Ceiling applied to the correction rate (see `defaultMaxCorrectionVelocity`); nil disables it.
+    public let maxCorrectionVelocity: LoopQuantity?
+
     /// All math is performed with glucose expressed in mg/dL
     private let unit = LoopUnit.milligramsPerDeciliter
-    
+
     /// State variables reported in diagnostic issue report
     var recentDiscrepancyValues: [Double] = []
     var integralCorrectionEffectDuration: TimeInterval?
     var proportionalCorrection: Double = 0.0
     var integralCorrection: Double = 0.0
     var differentialCorrection: Double = 0.0
+    /// Correction rate actually used (after the `maxCorrectionVelocity` clamp), for diagnostics.
+    var correctionVelocity: LoopQuantity?
     var currentDate: Date = Date()
 
-    public init(effectDuration: TimeInterval) {
+    public init(effectDuration: TimeInterval,
+                maxCorrectionVelocity: LoopQuantity? = IntegralRetrospectiveCorrection.defaultMaxCorrectionVelocity) {
         self.effectDuration = effectDuration
+        self.maxCorrectionVelocity = maxCorrectionVelocity
     }
     
     /**
@@ -158,8 +174,18 @@ public class IntegralRetrospectiveCorrection: RetrospectiveCorrection {
         
         let retrospectionTimeInterval = currentDiscrepancy.endDate.timeIntervalSince(currentDiscrepancy.startDate)
         let discrepancyTime = max(retrospectionTimeInterval, retrospectiveCorrectionGroupingInterval)
-            let velocity = LoopQuantity(unit: .milligramsPerDeciliterPerSecond, doubleValue: scaledCorrection / discrepancyTime)
-        
+        var velocityValue = scaledCorrection / discrepancyTime
+
+        // Bound the correction rate to a settings-free physiological ceiling (see
+        // `defaultMaxCorrectionVelocity`), so a large or spurious sustained discrepancy
+        // can't wind the integral up into over-/under-dosing.
+        if let maxCorrectionVelocity {
+            let cap = abs(maxCorrectionVelocity.doubleValue(for: .milligramsPerDeciliterPerSecond))
+            velocityValue = min(max(velocityValue, -cap), cap)
+        }
+        let velocity = LoopQuantity(unit: .milligramsPerDeciliterPerSecond, doubleValue: velocityValue)
+        correctionVelocity = velocity
+
         // Update array of glucose correction effects
         glucoseCorrectionEffect = startingGlucose.decayEffect(atRate: velocity, for: integralCorrectionEffectDuration!)
         

@@ -570,4 +570,66 @@ class CorrectionDosingTests: XCTestCase {
             XCTFail("Wrong .notice: \(String(describing: manualDose.notice))")
         }
     }
+
+    func testCorrectionRangeSampledPerPredictionPoint() {
+        // A flat high prediction crossing a target-band boundary two hours out.
+        let prediction = [
+            PredictedGlucoseValue(startDate: testDate.addingTimeInterval(.hours(0)), quantity: .glucose(160)),
+            PredictedGlucoseValue(startDate: testDate.addingTimeInterval(.hours(6.2)), quantity: .glucose(160))
+        ]
+
+        // Target switches from 90-120 to 150-170 at t+2h; predicted points beyond
+        // the boundary are already in range, so they should require no correction.
+        let steppedTarget: GlucoseRangeTimeline = [
+            AbsoluteScheduleValue(
+                startDate: testDate.addingTimeInterval(.hours(-24)),
+                endDate: testDate.addingTimeInterval(.hours(2)),
+                value: LoopQuantity.glucose(90)...LoopQuantity.glucose(120)
+            ),
+            AbsoluteScheduleValue(
+                startDate: testDate.addingTimeInterval(.hours(2)),
+                endDate: testDate.addingTimeInterval(.hours(24)),
+                value: LoopQuantity.glucose(150)...LoopQuantity.glucose(170)
+            )
+        ]
+
+        let uniformCorrection = LoopAlgorithm.insulinCorrection(
+            prediction: prediction,
+            at: testDate,
+            target: target,
+            suspendThreshold: suspendThreshold,
+            sensitivity: sensitivity,
+            insulinModel: insulinModel
+        )
+
+        let steppedCorrection = LoopAlgorithm.insulinCorrection(
+            prediction: prediction,
+            at: testDate,
+            target: steppedTarget,
+            suspendThreshold: suspendThreshold,
+            sensitivity: sensitivity,
+            insulinModel: insulinModel
+        )
+
+        let uniformDose = LoopAlgorithm.recommendManualBolus(
+            for: uniformCorrection,
+            maxBolus: 6,
+            currentGlucose: FixtureGlucoseSample(startDate: testDate, quantity: .glucose(160)),
+            target: target
+        )
+
+        let steppedDose = LoopAlgorithm.recommendManualBolus(
+            for: steppedCorrection,
+            maxBolus: 6,
+            currentGlucose: FixtureGlucoseSample(startDate: testDate, quantity: .glucose(160)),
+            target: steppedTarget
+        )
+
+        // With a uniform 90-120 target the whole forecast is above range.
+        XCTAssertGreaterThan(uniformDose.amount, 0.5)
+        // The points beyond t+2h sit inside the 150-170 band in effect there, so
+        // correcting to the per-point band requires less insulin than correcting
+        // the whole forecast to 90-120.
+        XCTAssertLessThan(steppedDose.amount, uniformDose.amount)
+    }
 }

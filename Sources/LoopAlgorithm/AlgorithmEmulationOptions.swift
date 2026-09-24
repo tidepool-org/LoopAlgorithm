@@ -56,8 +56,14 @@ public struct AlgorithmEmulationOptions: Equatable, Sendable {
         self.disableIRCVelocityCeiling = disableIRCVelocityCeiling
     }
 
-    /// Emulate the algorithm as shipped in Loop 1.0-era deployed apps ("Loop main"):
-    /// every legacy behavior on, every post-release bound off.
+    /// Emulate the algorithm as shipped in Tidepool Loop 1.0: the pre-extraction,
+    /// in-LoopKit algorithm behavior — every legacy behavior on, every
+    /// post-extraction bound off.
+    ///
+    /// These options cover the prediction/effects math only. Tidepool Loop 1.0
+    /// also dosed exclusively by temp basal (no automatic bolus, although LoopKit
+    /// supported it at the time); to reproduce that, callers should additionally
+    /// set `recommendationType` to `.tempBasal`.
     public static let loop1 = AlgorithmEmulationOptions(
         legacyBasalIOB: true,
         legacyRCDecay: true,

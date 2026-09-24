@@ -35,6 +35,7 @@ public struct AlgorithmInputFixture: AlgorithmInput {
     public var recommendationType: DoseRecommendationType = .automaticBolus
     public var automaticBolusApplicationFactor: Double?
     public var gradualTransitionsThreshold: Double?
+    public var emulation: AlgorithmEmulationOptions?
 
     public var recommendationInsulinModel: InsulinModel {
         recommendationInsulinType.insulinModel
@@ -73,7 +74,8 @@ public struct AlgorithmInputFixture: AlgorithmInput {
         recommendationInsulinType: FixtureInsulinType,
         recommendationType: DoseRecommendationType,
         automaticBolusApplicationFactor: Double? = nil,
-        gradualTransitionsThreshold: Double? = 40.0
+        gradualTransitionsThreshold: Double? = 40.0,
+        emulation: AlgorithmEmulationOptions? = nil
     ) {
         self.predictionStart = predictionStart
         self.glucoseHistory = glucoseHistory
@@ -95,6 +97,7 @@ public struct AlgorithmInputFixture: AlgorithmInput {
         self.recommendationType = recommendationType
         self.automaticBolusApplicationFactor = automaticBolusApplicationFactor
         self.gradualTransitionsThreshold = gradualTransitionsThreshold
+        self.emulation = emulation
     }
 }
 
@@ -148,7 +151,7 @@ extension AlgorithmInputFixture: Codable {
 
         self.automaticBolusApplicationFactor = try container.decodeIfPresent(Double.self, forKey: .automaticBolusApplicationFactor)
         self.gradualTransitionsThreshold = try container.decodeIfPresent(Double.self, forKey: .gradualTransitionsThreshold) ?? 40.0
-
+        self.emulation = try container.decodeIfPresent(AlgorithmEmulationOptions.self, forKey: .emulation)
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -184,6 +187,9 @@ extension AlgorithmInputFixture: Codable {
         try container.encode(recommendationType.rawValue, forKey: .recommendationType)
         try container.encode(automaticBolusApplicationFactor, forKey: .automaticBolusApplicationFactor)
         try container.encode(gradualTransitionsThreshold, forKey: .gradualTransitionsThreshold)
+        if let emulation {
+            try container.encode(emulation, forKey: .emulation)
+        }
     }
 
     private enum CodingKeys: String, CodingKey {
@@ -206,6 +212,7 @@ extension AlgorithmInputFixture: Codable {
         case recommendationType
         case automaticBolusApplicationFactor
         case gradualTransitionsThreshold
+        case emulation
     }
 }
 
@@ -230,7 +237,8 @@ extension AlgorithmInputFixture {
             recommendationInsulinType: .novolog,
             recommendationType: input.recommendationType,
             automaticBolusApplicationFactor: input.automaticBolusApplicationFactor,
-            gradualTransitionsThreshold: input.gradualTransitionsThreshold
+            gradualTransitionsThreshold: input.gradualTransitionsThreshold,
+            emulation: input.emulation
         )
 
         let encoder = JSONEncoder()

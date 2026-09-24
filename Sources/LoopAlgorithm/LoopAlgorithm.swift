@@ -160,10 +160,12 @@ public struct LoopAlgorithm {
     ///   - basal: Scheduled basal rate timeline: t-16h to t
     ///   - sensitivity: Insulin sensitivity timeline: t-16h to t (eventually with mid-absorption isf changes, it will be t-10h to t)
     ///   - carbRatio: Carb ratio timeline: t-10h to t+6h
+    ///   - target: Correction range timeline. Used only for the integral-correction clamp when `emulation.integralRCClamp` is enabled; may be empty otherwise.
     ///   - algorithmEffectsOptions: Which effects to include when combining effects to generate glucose prediction
     ///   - useIntegralRetrospectiveCorrection: If true, the prediction will use Integral Retrospection. If false, will use traditional Retrospective Correction
     ///   - includingPositiveVelocityAndRC: If false, only net negative momentum and RC effects will used.
     ///   - carbAbsorptionModel: A model conforming to CarbAbsorptionComputable that is used for computing carb absorption over time.
+    ///   - emulation: Options for reproducing earlier deployed algorithm behavior; the default emulates nothing.
     /// - Returns: A LoopPrediction struct containing the predicted glucose and the computed intermediate effects used to make the prediction
 
     public static func generatePrediction<CarbType, GlucoseType, InsulinDoseType>(
@@ -174,13 +176,15 @@ public struct LoopAlgorithm {
         basal: [AbsoluteScheduleValue<Double>],
         sensitivity: [AbsoluteScheduleValue<LoopQuantity>],
         carbRatio: [AbsoluteScheduleValue<Double>],
+        target: GlucoseRangeTimeline = [],
         algorithmEffectsOptions: AlgorithmEffectsOptions = .all,
         useIntegralRetrospectiveCorrection: Bool = false,
         includingPositiveVelocityAndRC: Bool = true,
         useMidAbsorptionISF: Bool = false,
         carbAbsorptionModel: CarbAbsorptionComputable = PiecewiseLinearAbsorption(),
         gradualTransitionsThreshold: Double? = 40.0,
-        momentumVelocityMaximum: LoopQuantity? = nil
+        momentumVelocityMaximum: LoopQuantity? = nil,
+        emulation: AlgorithmEmulationOptions = AlgorithmEmulationOptions()
     ) -> LoopPrediction<CarbType> where CarbType: CarbEntry, GlucoseType: GlucoseSampleValue, InsulinDoseType: InsulinDose {
 
         var prediction: [PredictedGlucoseValue] = []
@@ -202,7 +206,7 @@ public struct LoopAlgorithm {
             // Overlay basal history on basal doses, splitting doses to get amount delivered relative to basal
             dosesRelativeToBasal = doses.annotated(with: basal)
 
-            activeInsulin = dosesRelativeToBasal.insulinOnBoard(at: start)
+            activeInsulin = dosesRelativeToBasal.insulinOnBoard(at: start, useLegacyIntegration: emulation.legacyBasalIOB)
 
             var insulinEffectsInterval = dosesRelativeToBasal.effectsInterval() ?? DateInterval(start: start, end: start)
 
@@ -256,16 +260,30 @@ public struct LoopAlgorithm {
         let rc: RetrospectiveCorrection
 
         if useIntegralRetrospectiveCorrection {
-            rc = IntegralRetrospectiveCorrection(effectDuration: LoopMath.retrospectiveCorrectionEffectDuration)
+            rc = IntegralRetrospectiveCorrection(
+                effectDuration: LoopMath.retrospectiveCorrectionEffectDuration,
+                maxCorrectionVelocity: emulation.disableIRCVelocityCeiling ? nil : IntegralRetrospectiveCorrection.defaultMaxCorrectionVelocity,
+                useLegacyDecay: emulation.legacyRCDecay
+            )
         } else {
-            rc = StandardRetrospectiveCorrection(effectDuration: LoopMath.retrospectiveCorrectionEffectDuration)
+            rc = StandardRetrospectiveCorrection(effectDuration: LoopMath.retrospectiveCorrectionEffectDuration, useLegacyDecay: emulation.legacyRCDecay)
         }
 
         if let latestGlucose = glucoseHistory.last {
+            var integralClamp: IntegralRCClampSettings?
+            if emulation.integralRCClamp,
+               let isf = sensitivity.closestPrior(to: start)?.value,
+               let basalRate = basal.closestPrior(to: start)?.value,
+               let correctionRange = target.closestPrior(to: start)?.value
+            {
+                integralClamp = IntegralRCClampSettings(insulinSensitivity: isf, basalRate: basalRate, correctionRange: correctionRange)
+            }
+
             retrospectiveCorrectionEffects = rc.computeEffect(
                 startingAt: latestGlucose,
                 retrospectiveGlucoseDiscrepanciesSummed: retrospectiveGlucoseDiscrepanciesSummed,
                 recencyInterval: TimeInterval(minutes: 15),
+                integralClamp: integralClamp,
                 retrospectiveCorrectionGroupingInterval: LoopMath.retrospectiveCorrectionGroupingInterval
             )
 
@@ -397,17 +415,20 @@ public struct LoopAlgorithm {
         carbEntries: [CarbType],
         sensitivity: [AbsoluteScheduleValue<LoopQuantity>],
         carbRatio: [AbsoluteScheduleValue<Double>],
+        target: GlucoseRangeTimeline = [],
+        scheduledBasalRate: Double? = nil,
         algorithmEffectsOptions: AlgorithmEffectsOptions = .all,
         useIntegralRetrospectiveCorrection: Bool = false,
         includingPositiveVelocityAndRC: Bool = true,
         useMidAbsorptionISF: Bool = false,
         carbAbsorptionModel: CarbAbsorptionComputable = PiecewiseLinearAbsorption(),
         gradualTransitionsThreshold: Double? = 40.0,
-        momentumVelocityMaximum: LoopQuantity? = nil
+        momentumVelocityMaximum: LoopQuantity? = nil,
+        emulation: AlgorithmEmulationOptions = AlgorithmEmulationOptions()
     ) -> LoopPrediction<CarbType> where CarbType: CarbEntry, GlucoseType: GlucoseSampleValue {
 
         let dosesRelativeToBasal = precomputedInsulin.annotatedDoses
-        let activeInsulin = dosesRelativeToBasal.insulinOnBoard(at: start)
+        let activeInsulin = dosesRelativeToBasal.insulinOnBoard(at: start, useLegacyIntegration: emulation.legacyBasalIOB)
 
         // ── Insulin effects ──────────────────────────────────────────────────────
         // Fast path: clip the pre-computed effect timeline to the needed range.
@@ -465,8 +486,12 @@ public struct LoopAlgorithm {
             .combinedSums(of: LoopMath.retrospectiveCorrectionGroupingInterval * 1.01)
 
         let rc: RetrospectiveCorrection = useIntegralRetrospectiveCorrection
-            ? IntegralRetrospectiveCorrection(effectDuration: LoopMath.retrospectiveCorrectionEffectDuration)
-            : StandardRetrospectiveCorrection(effectDuration: LoopMath.retrospectiveCorrectionEffectDuration)
+            ? IntegralRetrospectiveCorrection(
+                effectDuration: LoopMath.retrospectiveCorrectionEffectDuration,
+                maxCorrectionVelocity: emulation.disableIRCVelocityCeiling ? nil : IntegralRetrospectiveCorrection.defaultMaxCorrectionVelocity,
+                useLegacyDecay: emulation.legacyRCDecay
+            )
+            : StandardRetrospectiveCorrection(effectDuration: LoopMath.retrospectiveCorrectionEffectDuration, useLegacyDecay: emulation.legacyRCDecay)
 
         var prediction: [PredictedGlucoseValue] = []
         var retrospectiveCorrectionEffects: [GlucoseEffect] = []
@@ -474,10 +499,20 @@ public struct LoopAlgorithm {
         var totalRetrospectiveCorrectionEffect: LoopQuantity?
 
         if let latestGlucose = glucoseHistory.last {
+            var integralClamp: IntegralRCClampSettings?
+            if emulation.integralRCClamp,
+               let isf = sensitivity.closestPrior(to: start)?.value,
+               let basalRate = scheduledBasalRate,
+               let correctionRange = target.closestPrior(to: start)?.value
+            {
+                integralClamp = IntegralRCClampSettings(insulinSensitivity: isf, basalRate: basalRate, correctionRange: correctionRange)
+            }
+
             retrospectiveCorrectionEffects = rc.computeEffect(
                 startingAt: latestGlucose,
                 retrospectiveGlucoseDiscrepanciesSummed: retrospectiveGlucoseDiscrepanciesSummed,
                 recencyInterval: TimeInterval(minutes: 15),
+                integralClamp: integralClamp,
                 retrospectiveCorrectionGroupingInterval: LoopMath.retrospectiveCorrectionGroupingInterval
             )
             totalRetrospectiveCorrectionEffect = rc.totalGlucoseCorrectionEffect
@@ -559,10 +594,12 @@ public struct LoopAlgorithm {
             basal: input.basal,
             sensitivity: input.sensitivity,
             carbRatio: input.carbRatio,
+            target: input.target,
             algorithmEffectsOptions: input.algorithmEffectsOptions,
             useIntegralRetrospectiveCorrection: input.useIntegralRetrospectiveCorrection,
             carbAbsorptionModel: input.carbAbsorptionModel.model,
-            gradualTransitionsThreshold: input.gradualTransitionsThreshold
+            gradualTransitionsThreshold: input.gradualTransitionsThreshold,
+            emulation: input.emulation ?? AlgorithmEmulationOptions()
         )
     }
 
@@ -741,12 +778,14 @@ public struct LoopAlgorithm {
                 basal: input.basal,
                 sensitivity: input.sensitivity,
                 carbRatio: input.carbRatio,
+                target: input.target,
                 algorithmEffectsOptions: .all,
                 useIntegralRetrospectiveCorrection: input.useIntegralRetrospectiveCorrection,
                 includingPositiveVelocityAndRC: input.includePositiveVelocityAndRC,
                 useMidAbsorptionISF: input.useMidAbsorptionISF,
                 carbAbsorptionModel: input.carbAbsorptionModel.model,
-                gradualTransitionsThreshold: input.gradualTransitionsThreshold
+                gradualTransitionsThreshold: input.gradualTransitionsThreshold,
+                emulation: input.emulation ?? AlgorithmEmulationOptions()
             )
 
             let sensitivityForDosing: [AbsoluteScheduleValue<LoopQuantity>]

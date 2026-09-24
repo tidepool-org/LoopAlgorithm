@@ -141,6 +141,34 @@ final class AlgorithmEmulationTests: XCTestCase {
         XCTAssertGreaterThan(maxDiff, 0.1, "Legacy decay should differ for unaligned sample timestamps")
     }
 
+    // MARK: - Insulin model presets (Tidepool Loop 1.0 adult/child choice)
+
+    func testRapidActingModelPresetsSelectableAsInsulinTypes() throws {
+        XCTAssertEqual(
+            FixtureInsulinType.rapidActingAdult.insulinModel as? ExponentialInsulinModelPreset,
+            ExponentialInsulinModelPreset.rapidActingAdult
+        )
+        XCTAssertEqual(
+            FixtureInsulinType.rapidActingChild.insulinModel as? ExponentialInsulinModelPreset,
+            ExponentialInsulinModelPreset.rapidActingChild
+        )
+
+        // Selectable from JSON, for both the recommendation model and doses.
+        XCTAssertEqual(
+            try JSONDecoder().decode(FixtureInsulinType.self, from: Data("\"rapidActingChild\"".utf8)),
+            .rapidActingChild
+        )
+
+        let url = Bundle.module.url(forResource: "suspend_scenario", withExtension: "json", subdirectory: "Fixtures")!
+        var json = try JSONSerialization.jsonObject(with: Data(contentsOf: url)) as! [String: Any]
+        json["recommendationInsulinType"] = "rapidActingChild"
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let fixture = try decoder.decode(AlgorithmInputFixture.self, from: try JSONSerialization.data(withJSONObject: json))
+        XCTAssertEqual(fixture.recommendationInsulinType, .rapidActingChild)
+        XCTAssertEqual(fixture.recommendationInsulinModel as? ExponentialInsulinModelPreset, .rapidActingChild)
+    }
+
     // MARK: - Fixture plumbing
 
     func testFixtureDecodesEmulationPreset() throws {

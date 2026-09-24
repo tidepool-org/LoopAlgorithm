@@ -60,10 +60,15 @@ public struct AlgorithmEmulationOptions: Equatable, Sendable {
     /// in-LoopKit algorithm behavior — every legacy behavior on, every
     /// post-extraction bound off.
     ///
-    /// These options cover the prediction/effects math only. Tidepool Loop 1.0
-    /// also dosed exclusively by temp basal (no automatic bolus, although LoopKit
-    /// supported it at the time); to reproduce that, callers should additionally
-    /// set `recommendationType` to `.tempBasal`.
+    /// These options cover the prediction/effects math only. Two Tidepool Loop
+    /// 1.0 behaviors are expressed through existing inputs instead:
+    /// - It dosed exclusively by temp basal (no automatic bolus, although
+    ///   LoopKit supported it at the time): set `recommendationType` to
+    ///   `.tempBasal`.
+    /// - It had no ultra-rapid insulin types; users chose between the
+    ///   rapid-acting adult and rapid-acting child models: set
+    ///   `recommendationInsulinType` (and dose insulin types) to
+    ///   `.rapidActingAdult` or `.rapidActingChild`.
     public static let loop1 = AlgorithmEmulationOptions(
         legacyBasalIOB: true,
         legacyRCDecay: true,

@@ -15,9 +15,29 @@ public struct InsulinMath {
 }
 
 extension BasalRelativeDose {
-    private func continuousDeliveryInsulinOnBoard(at date: Date, delta: TimeInterval) -> Double {
+    private func continuousDeliveryInsulinOnBoard(at date: Date, delta: TimeInterval, useLegacyIntegration: Bool) -> Double {
         let doseDuration = endDate.timeIntervalSince(startDate)  // t1
         let time = date.timeIntervalSince(startDate)
+
+        if useLegacyIntegration {
+            // Deployed Loop (pre-#35): the loop's upper bound is quantized to the
+            // delta grid, so a whole chunk is added discontinuously each time
+            // `time` crosses a delta boundary — a delta-scale ripple on any basal
+            // segment longer than one delta.
+            var iob: Double = 0
+            var doseDate = TimeInterval(0)  // i
+            repeat {
+                let segment: Double
+                if doseDuration > 0 {
+                    segment = max(0, min(doseDate + delta, doseDuration) - doseDate) / doseDuration
+                } else {
+                    segment = 1
+                }
+                iob += segment * insulinModel.percentEffectRemaining(at: time - doseDate)
+                doseDate += delta
+            } while doseDate <= min(floor((time + insulinModel.delay) / delta) * delta, doseDuration)
+            return iob
+        }
 
         guard doseDuration > 0 else {
             return insulinModel.percentEffectRemaining(at: time)
@@ -47,7 +67,7 @@ extension BasalRelativeDose {
         return iob
     }
 
-    func insulinOnBoard(at date: Date, delta: TimeInterval) -> Double {
+    func insulinOnBoard(at date: Date, delta: TimeInterval, useLegacyIntegration: Bool = false) -> Double {
         let time = date.timeIntervalSince(startDate)
         guard time >= 0 else {
             return 0
@@ -57,7 +77,7 @@ extension BasalRelativeDose {
         if endDate.timeIntervalSince(startDate) <= 1.05 * delta {
             return netBasalUnits * insulinModel.percentEffectRemaining(at: time)
         } else {
-            return netBasalUnits * continuousDeliveryInsulinOnBoard(at: date, delta: delta)
+            return netBasalUnits * continuousDeliveryInsulinOnBoard(at: date, delta: delta, useLegacyIntegration: useLegacyIntegration)
         }
     }
 
@@ -301,7 +321,8 @@ extension Collection where Element == BasalRelativeDose {
         longestEffectDuration: TimeInterval = InsulinMath.defaultInsulinActivityDuration,
         from start: Date? = nil,
         to end: Date? = nil,
-        delta: TimeInterval = GlucoseMath.defaultDelta
+        delta: TimeInterval = GlucoseMath.defaultDelta,
+        useLegacyIntegration: Bool = false
     ) -> [InsulinValue] {
         guard let (start, end) = LoopMath.simulationDateRangeForSamples(self, from: start, to: end, duration: longestEffectDuration, delta: delta) else {
             return []
@@ -312,7 +333,7 @@ extension Collection where Element == BasalRelativeDose {
 
         repeat {
             let value = reduce(0) { (value, dose) -> Double in
-                return value + dose.insulinOnBoard(at: date, delta: delta)
+                return value + dose.insulinOnBoard(at: date, delta: delta, useLegacyIntegration: useLegacyIntegration)
             }
 
             values.append(InsulinValue(startDate: date, value: value))
@@ -330,10 +351,11 @@ extension Collection where Element == BasalRelativeDose {
      - returns: Insulin amount remaining at specified time
      */
     public func insulinOnBoard(
-        at date: Date
+        at date: Date,
+        useLegacyIntegration: Bool = false
     ) -> Double {
         return reduce(0) { (value, dose) -> Double in
-            return value + dose.insulinOnBoard(at: date, delta: GlucoseMath.defaultDelta)
+            return value + dose.insulinOnBoard(at: date, delta: GlucoseMath.defaultDelta, useLegacyIntegration: useLegacyIntegration)
         }
     }
 

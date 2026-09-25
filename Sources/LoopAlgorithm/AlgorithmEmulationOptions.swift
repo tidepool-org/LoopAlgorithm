@@ -44,16 +44,25 @@ public struct AlgorithmEmulationOptions: Equatable, Sendable {
     /// keeps the ceiling.
     public var disableIRCVelocityCeiling: Bool
 
+    /// Disable the gradual-transitions gate on retrospective correction and
+    /// momentum. Deployed Loop predates the gate, and the fixture input cannot
+    /// express a nil `gradualTransitionsThreshold` (absent decodes to the 40 mg/dL
+    /// default), so faithful emulation must switch it off here. False (default)
+    /// leaves `gradualTransitionsThreshold` in effect.
+    public var noGradualTransitionsGate: Bool
+
     public init(
         legacyBasalIOB: Bool = false,
         legacyRCDecay: Bool = false,
         integralRCClamp: Bool = false,
-        disableIRCVelocityCeiling: Bool = false
+        disableIRCVelocityCeiling: Bool = false,
+        noGradualTransitionsGate: Bool = false
     ) {
         self.legacyBasalIOB = legacyBasalIOB
         self.legacyRCDecay = legacyRCDecay
         self.integralRCClamp = integralRCClamp
         self.disableIRCVelocityCeiling = disableIRCVelocityCeiling
+        self.noGradualTransitionsGate = noGradualTransitionsGate
     }
 
     /// Emulate the algorithm as shipped in Tidepool Loop 1.0: the pre-extraction,
@@ -73,7 +82,8 @@ public struct AlgorithmEmulationOptions: Equatable, Sendable {
         legacyBasalIOB: true,
         legacyRCDecay: true,
         integralRCClamp: true,
-        disableIRCVelocityCeiling: true
+        disableIRCVelocityCeiling: true,
+        noGradualTransitionsGate: true
     )
 }
 
@@ -85,6 +95,7 @@ extension AlgorithmEmulationOptions: Codable {
         case legacyRCDecay
         case integralRCClamp
         case disableIRCVelocityCeiling
+        case noGradualTransitionsGate
     }
 
     public init(from decoder: Decoder) throws {
@@ -104,6 +115,7 @@ extension AlgorithmEmulationOptions: Codable {
         self.legacyRCDecay = try container.decodeIfPresent(Bool.self, forKey: .legacyRCDecay) ?? false
         self.integralRCClamp = try container.decodeIfPresent(Bool.self, forKey: .integralRCClamp) ?? false
         self.disableIRCVelocityCeiling = try container.decodeIfPresent(Bool.self, forKey: .disableIRCVelocityCeiling) ?? false
+        self.noGradualTransitionsGate = try container.decodeIfPresent(Bool.self, forKey: .noGradualTransitionsGate) ?? false
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -117,5 +129,6 @@ extension AlgorithmEmulationOptions: Codable {
         try container.encode(legacyRCDecay, forKey: .legacyRCDecay)
         try container.encode(integralRCClamp, forKey: .integralRCClamp)
         try container.encode(disableIRCVelocityCeiling, forKey: .disableIRCVelocityCeiling)
+        try container.encode(noGradualTransitionsGate, forKey: .noGradualTransitionsGate)
     }
 }

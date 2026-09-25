@@ -39,6 +39,7 @@ final class AlgorithmEmulationTests: XCTestCase {
         XCTAssertFalse(options.legacyRCDecay)
         XCTAssertFalse(options.integralRCClamp)
         XCTAssertFalse(options.disableIRCVelocityCeiling)
+        XCTAssertFalse(options.noGradualTransitionsGate)
     }
 
     func testUnknownPresetThrows() {

@@ -34,4 +34,9 @@ public protocol AlgorithmInput {
     var recommendationType: DoseRecommendationType { get }
     var automaticBolusApplicationFactor: Double? { get } // Defaults to 0.4
     var gradualTransitionsThreshold: Double? { get }
+    var emulation: AlgorithmEmulationOptions? { get } // Defaults to nil (no emulation)
+}
+
+public extension AlgorithmInput {
+    var emulation: AlgorithmEmulationOptions? { nil }
 }

@@ -17,20 +17,24 @@ public class StandardRetrospectiveCorrection: RetrospectiveCorrection {
     /// RetrospectiveCorrection protocol variables
     /// Standard effect duration
     let effectDuration: TimeInterval
+    /// Emulate pre-#33 (deployed Loop) step-by-step decay for the RC effect timeline.
+    let useLegacyDecay: Bool
     /// Overall retrospective correction effect
     public var totalGlucoseCorrectionEffect: LoopQuantity?
 
     /// All math is performed with glucose expressed in mg/dL
     private let unit = LoopUnit.milligramsPerDeciliter
 
-    public init(effectDuration: TimeInterval) {
+    public init(effectDuration: TimeInterval, useLegacyDecay: Bool = false) {
         self.effectDuration = effectDuration
+        self.useLegacyDecay = useLegacyDecay
     }
 
     public func computeEffect(
         startingAt startingGlucose: GlucoseValue,
         retrospectiveGlucoseDiscrepanciesSummed: [GlucoseChange]?,
         recencyInterval: TimeInterval,
+        integralClamp: IntegralRCClampSettings? = nil,
         retrospectiveCorrectionGroupingInterval: TimeInterval
     ) -> [GlucoseEffect] {
         // Last discrepancy should be recent, otherwise clear the effect and return
@@ -51,6 +55,6 @@ public class StandardRetrospectiveCorrection: RetrospectiveCorrection {
         let velocity = LoopQuantity(unit: .milligramsPerDeciliterPerSecond, doubleValue: currentDiscrepancyValue / discrepancyTime)
         
         // Update array of glucose correction effects
-        return startingGlucose.decayEffect(atRate: velocity, for: effectDuration)
+        return startingGlucose.decayEffect(atRate: velocity, for: effectDuration, useLegacyDecay: useLegacyDecay)
     }
 }

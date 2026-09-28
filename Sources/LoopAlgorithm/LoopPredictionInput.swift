@@ -27,6 +27,10 @@ public struct LoopPredictionInput<CarbType: CarbEntry, GlucoseType: GlucoseSampl
     // Expected time range coverage: t-10h to t+6h
     public var carbRatio: [AbsoluteScheduleValue<Double>]
 
+    // Correction-range timeline. Used only for the IntegralRC integral-correction
+    // clamp when `emulation.integralRCClamp` is enabled; may be empty otherwise.
+    public var target: GlucoseRangeTimeline = []
+
     public var algorithmEffectsOptions: AlgorithmEffectsOptions
 
     public var useIntegralRetrospectiveCorrection: Bool = false
@@ -37,6 +41,8 @@ public struct LoopPredictionInput<CarbType: CarbEntry, GlucoseType: GlucoseSampl
     
     public var gradualTransitionsThreshold: Double? = 40.0
 
+    public var emulation: AlgorithmEmulationOptions? = nil
+
     public init(
         glucoseHistory: [GlucoseType],
         doses: [InsulinDoseType],
@@ -44,11 +50,13 @@ public struct LoopPredictionInput<CarbType: CarbEntry, GlucoseType: GlucoseSampl
         basal: [AbsoluteScheduleValue<Double>],
         sensitivity: [AbsoluteScheduleValue<LoopQuantity>],
         carbRatio: [AbsoluteScheduleValue<Double>],
+        target: GlucoseRangeTimeline = [],
         algorithmEffectsOptions: AlgorithmEffectsOptions,
         useIntegralRetrospectiveCorrection: Bool,
         includePositiveVelocityAndRC: Bool,
         carbAbsorptionModel: CarbAbsorptionModel,
-        gradualTransitionsThreshold: Double? = 40.0
+        gradualTransitionsThreshold: Double? = 40.0,
+        emulation: AlgorithmEmulationOptions? = nil
     )
     {
         self.glucoseHistory = glucoseHistory
@@ -57,11 +65,13 @@ public struct LoopPredictionInput<CarbType: CarbEntry, GlucoseType: GlucoseSampl
         self.basal = basal
         self.sensitivity = sensitivity
         self.carbRatio = carbRatio
+        self.target = target
         self.algorithmEffectsOptions = algorithmEffectsOptions
         self.useIntegralRetrospectiveCorrection = useIntegralRetrospectiveCorrection
         self.includePositiveVelocityAndRC = includePositiveVelocityAndRC
         self.carbAbsorptionModel = carbAbsorptionModel
         self.gradualTransitionsThreshold = gradualTransitionsThreshold
+        self.emulation = emulation
     }
 }
 
@@ -77,6 +87,15 @@ extension LoopPredictionInput: Codable where CarbType == FixtureCarbEntry, Gluco
         let sensitivityMgdl = try container.decode([AbsoluteScheduleValue<Double>].self, forKey: .sensitivity)
         self.sensitivity = sensitivityMgdl.map { AbsoluteScheduleValue(startDate: $0.startDate, endDate: $0.endDate, value: LoopQuantity(unit: .milligramsPerDeciliter, doubleValue: $0.value))}
         self.carbRatio = try container.decode([AbsoluteScheduleValue<Double>].self, forKey: .carbRatio)
+        if let targetMgdl = try container.decodeIfPresent([TargetEntry].self, forKey: .target) {
+            self.target = targetMgdl.map {
+                let lower = LoopQuantity(unit: .milligramsPerDeciliter, doubleValue: $0.lowerBound)
+                let upper = LoopQuantity(unit: .milligramsPerDeciliter, doubleValue: $0.upperBound)
+                return AbsoluteScheduleValue(startDate: $0.startDate, endDate: $0.endDate, value: lower...upper)
+            }
+        } else {
+            self.target = []
+        }
         if let algorithmEffectsOptionsRaw = try container.decodeIfPresent(AlgorithmEffectsOptions.RawValue.self, forKey: .algorithmEffectsOptions) {
             self.algorithmEffectsOptions = AlgorithmEffectsOptions(rawValue: algorithmEffectsOptionsRaw)
         } else {
@@ -86,7 +105,7 @@ extension LoopPredictionInput: Codable where CarbType == FixtureCarbEntry, Gluco
         self.includePositiveVelocityAndRC = try container.decodeIfPresent(Bool.self, forKey: .includePositiveVelocityAndRC) ?? true
         self.carbAbsorptionModel = try container.decodeIfPresent(CarbAbsorptionModel.self, forKey: .carbAbsorptionModel) ?? .piecewiseLinear
         self.gradualTransitionsThreshold = try container.decodeIfPresent(Double.self, forKey: .gradualTransitionsThreshold) ?? 40.0
-
+        self.emulation = try container.decodeIfPresent(AlgorithmEmulationOptions.self, forKey: .emulation)
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -98,6 +117,16 @@ extension LoopPredictionInput: Codable where CarbType == FixtureCarbEntry, Gluco
         let sensitivityMgdl = sensitivity.map { AbsoluteScheduleValue(startDate: $0.startDate, endDate: $0.endDate, value: $0.value.doubleValue(for: .milligramsPerDeciliter)) }
         try container.encode(sensitivityMgdl, forKey: .sensitivity)
         try container.encode(carbRatio, forKey: .carbRatio)
+        if !target.isEmpty {
+            let targetMgdl = target.map {
+                TargetEntry(
+                    startDate: $0.startDate,
+                    endDate: $0.endDate,
+                    lowerBound: $0.value.lowerBound.doubleValue(for: .milligramsPerDeciliter),
+                    upperBound: $0.value.upperBound.doubleValue(for: .milligramsPerDeciliter))
+            }
+            try container.encode(targetMgdl, forKey: .target)
+        }
         if algorithmEffectsOptions != .all {
             try container.encode(algorithmEffectsOptions.rawValue, forKey: .algorithmEffectsOptions)
         }
@@ -109,6 +138,16 @@ extension LoopPredictionInput: Codable where CarbType == FixtureCarbEntry, Gluco
         }
         try container.encode(carbAbsorptionModel, forKey: .carbAbsorptionModel)
         try container.encode(gradualTransitionsThreshold, forKey: .gradualTransitionsThreshold)
+        if let emulation {
+            try container.encode(emulation, forKey: .emulation)
+        }
+    }
+
+    struct TargetEntry: Codable {
+        var startDate: Date
+        var endDate: Date
+        var lowerBound: Double
+        var upperBound: Double
     }
 
     private enum CodingKeys: String, CodingKey {
@@ -118,10 +157,12 @@ extension LoopPredictionInput: Codable where CarbType == FixtureCarbEntry, Gluco
         case basal
         case sensitivity
         case carbRatio
+        case target
         case algorithmEffectsOptions
         case useIntegralRetrospectiveCorrection
         case includePositiveVelocityAndRC
         case carbAbsorptionModel
         case gradualTransitionsThreshold
+        case emulation
     }
 }

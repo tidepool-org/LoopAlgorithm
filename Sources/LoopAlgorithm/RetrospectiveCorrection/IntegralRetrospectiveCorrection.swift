@@ -58,6 +58,9 @@ public class IntegralRetrospectiveCorrection: RetrospectiveCorrection {
     /// Ceiling applied to the correction rate (see `defaultMaxCorrectionVelocity`); nil disables it.
     public let maxCorrectionVelocity: LoopQuantity?
 
+    /// Emulate pre-#33 (deployed Loop) step-by-step decay for the RC effect timeline.
+    let useLegacyDecay: Bool
+
     /// All math is performed with glucose expressed in mg/dL
     private let unit = LoopUnit.milligramsPerDeciliter
 
@@ -72,9 +75,11 @@ public class IntegralRetrospectiveCorrection: RetrospectiveCorrection {
     var currentDate: Date = Date()
 
     public init(effectDuration: TimeInterval,
-                maxCorrectionVelocity: LoopQuantity? = IntegralRetrospectiveCorrection.defaultMaxCorrectionVelocity) {
+                maxCorrectionVelocity: LoopQuantity? = IntegralRetrospectiveCorrection.defaultMaxCorrectionVelocity,
+                useLegacyDecay: Bool = false) {
         self.effectDuration = effectDuration
         self.maxCorrectionVelocity = maxCorrectionVelocity
+        self.useLegacyDecay = useLegacyDecay
     }
     
     /**
@@ -91,6 +96,7 @@ public class IntegralRetrospectiveCorrection: RetrospectiveCorrection {
         startingAt startingGlucose: GlucoseValue,
         retrospectiveGlucoseDiscrepanciesSummed: [GlucoseChange]?,
         recencyInterval: TimeInterval,
+        integralClamp: IntegralRCClampSettings? = nil,
         retrospectiveCorrectionGroupingInterval: TimeInterval
         ) -> [GlucoseEffect] {
         
@@ -144,6 +150,25 @@ public class IntegralRetrospectiveCorrection: RetrospectiveCorrection {
                     IntegralRetrospectiveCorrection.integralGain * discrepancy
                 integralCorrectionEffectMinutes += 2.0 * IntegralRetrospectiveCorrection.delta.minutes
             }
+            // Integral-correction clamp (deployed-LoopKit safety bound): bounds the
+            // wound-up integral term by an ISF×basal-scaled, correction-range-relative
+            // window so it can't drive the forecast into over-/under-dosing:
+            //   (+) limit: between 1× and 4× the zero-temp effect, larger the further
+            //       glucose sits above the range top (more room to correct a real high).
+            //   (−) limit: at most ~(glucose − rangeMin) below target, with a 10 mg/dL
+            //       floor, capping over-suspension.
+            // Applied only when the decision-time clamp settings are supplied; when
+            // nil the integral term is left unclamped, matching the behavior of this
+            // port before the clamp was restored.
+            if let clamp = integralClamp {
+                let rangeMin = clamp.correctionRange.lowerBound.doubleValue(for: unit)
+                let rangeMax = clamp.correctionRange.upperBound.doubleValue(for: unit)
+                let latestGlucoseValue = startingGlucose.quantity.doubleValue(for: unit)
+                let zeroTempEffect = abs(clamp.insulinSensitivity.doubleValue(for: unit) * clamp.basalRate)
+                let integralEffectPositiveLimit = min(max(latestGlucoseValue - rangeMax, 1.0 * zeroTempEffect), 4.0 * zeroTempEffect)
+                let integralEffectNegativeLimit = -max(10.0, latestGlucoseValue - rangeMin)
+                integralCorrection = min(max(integralCorrection, integralEffectNegativeLimit), integralEffectPositiveLimit)
+            }
             // Limit effect duration
             integralCorrectionEffectMinutes = min(integralCorrectionEffectMinutes, IntegralRetrospectiveCorrection.maximumCorrectionEffectDuration.minutes)
             
@@ -187,7 +212,7 @@ public class IntegralRetrospectiveCorrection: RetrospectiveCorrection {
         correctionVelocity = velocity
 
         // Update array of glucose correction effects
-        glucoseCorrectionEffect = startingGlucose.decayEffect(atRate: velocity, for: integralCorrectionEffectDuration!)
+        glucoseCorrectionEffect = startingGlucose.decayEffect(atRate: velocity, for: integralCorrectionEffectDuration!, useLegacyDecay: useLegacyDecay)
         
         // Return glucose correction effects
         return( glucoseCorrectionEffect )

@@ -331,7 +331,10 @@ public struct LoopAlgorithm {
             var useMomentum: Bool = true
             if algorithmEffectsOptions.contains(.momentum) {
                 let momentumInputData = glucoseHistory.filterDateRange(start.addingTimeInterval(-GlucoseMath.momentumDataInterval), start)
-                momentumEffects = momentumInputData.linearMomentumEffect(velocityMaximum: momentumVelocityMaximum)
+                momentumEffects = momentumInputData.linearMomentumEffect(
+                    velocityMaximum: momentumVelocityMaximum,
+                    gradualTransitionThreshold: emulation.noGradualTransitionsGate ? nil : 40.0
+                )
                 if !includingPositiveVelocityAndRC, let netMomentum = momentumEffects.netEffect(), netMomentum.quantity.doubleValue(for: .milligramsPerDeciliter) > 0 {
                     // positive momentum is turned off
                     useMomentum = false
@@ -545,7 +548,10 @@ public struct LoopAlgorithm {
                 let momentumInputData = glucoseHistory.filterDateRange(
                     start.addingTimeInterval(-GlucoseMath.momentumDataInterval), start
                 )
-                momentumEffects = momentumInputData.linearMomentumEffect(velocityMaximum: momentumVelocityMaximum)
+                momentumEffects = momentumInputData.linearMomentumEffect(
+                    velocityMaximum: momentumVelocityMaximum,
+                    gradualTransitionThreshold: emulation.noGradualTransitionsGate ? nil : 40.0
+                )
                 if !includingPositiveVelocityAndRC,
                    let netMomentum = momentumEffects.netEffect(),
                    netMomentum.quantity.doubleValue(for: .milligramsPerDeciliter) > 0 {
@@ -813,7 +819,10 @@ public struct LoopAlgorithm {
                 sensitivity: sensitivityForDosing,
                 insulinModel: input.recommendationInsulinModel)
 
-            let maxActiveInsulin = input.maxBolus * (input.maxActiveInsulinMultiplier ?? 2)
+            let emulation = input.emulation ?? AlgorithmEmulationOptions()
+            let maxActiveInsulin = emulation.disableMaxActiveInsulinLimit
+                ? Double.infinity
+                : input.maxBolus * (input.maxActiveInsulinMultiplier ?? 2)
 
             switch input.recommendationType {
             case .manualBolus:

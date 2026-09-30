@@ -48,21 +48,31 @@ public struct AlgorithmEmulationOptions: Equatable, Sendable {
     /// momentum. Deployed Loop predates the gate, and the fixture input cannot
     /// express a nil `gradualTransitionsThreshold` (absent decodes to the 40 mg/dL
     /// default), so faithful emulation must switch it off here. False (default)
-    /// leaves `gradualTransitionsThreshold` in effect.
+    /// leaves `gradualTransitionsThreshold` in effect for retrospective correction
+    /// and the fixed 40 mg/dL gate in effect for momentum.
     public var noGradualTransitionsGate: Bool
+
+    /// Disable the max-active-insulin limit on automatic dosing (the
+    /// `maxBolus × maxActiveInsulinMultiplier` headroom cap). Tidepool Loop 1.0's
+    /// temp basal recommendation had no active-insulin limit, so with IOB above the
+    /// limit the current port caps the temp basal below scheduled — possibly to
+    /// zero — where 1.0 would correct a high. False (default) enforces the limit.
+    public var disableMaxActiveInsulinLimit: Bool
 
     public init(
         legacyBasalIOB: Bool = false,
         legacyRCDecay: Bool = false,
         integralRCClamp: Bool = false,
         disableIRCVelocityCeiling: Bool = false,
-        noGradualTransitionsGate: Bool = false
+        noGradualTransitionsGate: Bool = false,
+        disableMaxActiveInsulinLimit: Bool = false
     ) {
         self.legacyBasalIOB = legacyBasalIOB
         self.legacyRCDecay = legacyRCDecay
         self.integralRCClamp = integralRCClamp
         self.disableIRCVelocityCeiling = disableIRCVelocityCeiling
         self.noGradualTransitionsGate = noGradualTransitionsGate
+        self.disableMaxActiveInsulinLimit = disableMaxActiveInsulinLimit
     }
 
     /// Emulate the algorithm as shipped in Tidepool Loop 1.0: the pre-extraction,
@@ -83,7 +93,8 @@ public struct AlgorithmEmulationOptions: Equatable, Sendable {
         legacyRCDecay: true,
         integralRCClamp: true,
         disableIRCVelocityCeiling: true,
-        noGradualTransitionsGate: true
+        noGradualTransitionsGate: true,
+        disableMaxActiveInsulinLimit: true
     )
 }
 
@@ -96,6 +107,7 @@ extension AlgorithmEmulationOptions: Codable {
         case integralRCClamp
         case disableIRCVelocityCeiling
         case noGradualTransitionsGate
+        case disableMaxActiveInsulinLimit
     }
 
     public init(from decoder: Decoder) throws {
@@ -116,6 +128,7 @@ extension AlgorithmEmulationOptions: Codable {
         self.integralRCClamp = try container.decodeIfPresent(Bool.self, forKey: .integralRCClamp) ?? false
         self.disableIRCVelocityCeiling = try container.decodeIfPresent(Bool.self, forKey: .disableIRCVelocityCeiling) ?? false
         self.noGradualTransitionsGate = try container.decodeIfPresent(Bool.self, forKey: .noGradualTransitionsGate) ?? false
+        self.disableMaxActiveInsulinLimit = try container.decodeIfPresent(Bool.self, forKey: .disableMaxActiveInsulinLimit) ?? false
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -130,5 +143,6 @@ extension AlgorithmEmulationOptions: Codable {
         try container.encode(integralRCClamp, forKey: .integralRCClamp)
         try container.encode(disableIRCVelocityCeiling, forKey: .disableIRCVelocityCeiling)
         try container.encode(noGradualTransitionsGate, forKey: .noGradualTransitionsGate)
+        try container.encode(disableMaxActiveInsulinLimit, forKey: .disableMaxActiveInsulinLimit)
     }
 }

@@ -107,18 +107,22 @@ extension BidirectionalCollection where Element: GlucoseSampleValue, Index == In
     ///   - duration: The duration of the effects
     ///   - delta: The time differential for the returned values
     ///   - velocityMaximum: The limit on how fast the momentum effect can be. Defaults to 4 mg/dL/min based on physiological rates, if nil passed.
+    ///   - gradualTransitionThreshold: Maximum allowed difference between consecutive readings in mg/dL; momentum is
+    ///     not computed across a larger jump. Nil disables the gate, as in deployed Loop before the gate was added.
     /// - Returns: An array of glucose effects
     public func linearMomentumEffect(
         duration: TimeInterval = GlucoseMath.momentumDuration,
         delta: TimeInterval = GlucoseMath.defaultDelta,
-        velocityMaximum: LoopQuantity? = nil
+        velocityMaximum: LoopQuantity? = nil,
+        gradualTransitionThreshold: Double? = 40.0
     ) -> [GlucoseEffect] {
 
         let velocityMax = velocityMaximum ?? LoopQuantity(unit: .milligramsPerDeciliterPerMinute, doubleValue: 4.0)
 
         guard
             self.count > 2,  // Linear regression isn't much use without 3 or more entries.
-            hasGradualTransitions() && isContinuous() && !containsCalibrations() && hasSingleProvenance,
+            gradualTransitionThreshold.map({ hasGradualTransitions(gradualTransitionThreshold: $0) }) ?? true,
+            isContinuous() && !containsCalibrations() && hasSingleProvenance,
             let firstSample = self.first,
             let lastSample = self.last,
             let (startDate, endDate) = LoopMath.simulationDateRangeForSamples([lastSample], duration: duration, delta: delta)

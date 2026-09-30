@@ -48,42 +48,74 @@ public struct AlgorithmEmulationOptions: Equatable, Sendable {
     /// momentum. Deployed Loop predates the gate, and the fixture input cannot
     /// express a nil `gradualTransitionsThreshold` (absent decodes to the 40 mg/dL
     /// default), so faithful emulation must switch it off here. False (default)
-    /// leaves `gradualTransitionsThreshold` in effect.
+    /// leaves `gradualTransitionsThreshold` in effect for retrospective correction
+    /// and the fixed 40 mg/dL gate in effect for momentum.
     public var noGradualTransitionsGate: Bool
+
+    /// Disable the max-active-insulin limit on automatic dosing (the
+    /// `maxBolus × maxActiveInsulinMultiplier` headroom cap). Tidepool Loop 1.0's
+    /// temp basal recommendation had no active-insulin limit, so with IOB above the
+    /// limit the current port caps the temp basal below scheduled — possibly to
+    /// zero — where 1.0 would correct a high. False (default) enforces the limit.
+    public var disableMaxActiveInsulinLimit: Bool
 
     public init(
         legacyBasalIOB: Bool = false,
         legacyRCDecay: Bool = false,
         integralRCClamp: Bool = false,
         disableIRCVelocityCeiling: Bool = false,
-        noGradualTransitionsGate: Bool = false
+        noGradualTransitionsGate: Bool = false,
+        disableMaxActiveInsulinLimit: Bool = false
     ) {
         self.legacyBasalIOB = legacyBasalIOB
         self.legacyRCDecay = legacyRCDecay
         self.integralRCClamp = integralRCClamp
         self.disableIRCVelocityCeiling = disableIRCVelocityCeiling
         self.noGradualTransitionsGate = noGradualTransitionsGate
+        self.disableMaxActiveInsulinLimit = disableMaxActiveInsulinLimit
     }
 
     /// Emulate the algorithm as shipped in Tidepool Loop 1.0: the pre-extraction,
     /// in-LoopKit algorithm behavior — every legacy behavior on, every
     /// post-extraction bound off.
     ///
-    /// These options cover the prediction/effects math only. Two Tidepool Loop
-    /// 1.0 behaviors are expressed through existing inputs instead:
+    /// These options cover the prediction/effects math only. Other Tidepool
+    /// Loop 1.0 behaviors are expressed through existing inputs instead:
     /// - It dosed exclusively by temp basal (no automatic bolus, although
     ///   LoopKit supported it at the time): set `recommendationType` to
-    ///   `.tempBasal`.
-    /// - It had no ultra-rapid insulin types; users chose between the
-    ///   rapid-acting adult and rapid-acting child models: set
-    ///   `recommendationInsulinType` (and dose insulin types) to
+    ///   `.tempBasal`. The fixture default is `.automaticBolus`.
+    /// - It used standard retrospective correction only (60 min effect); it
+    ///   had no integral retrospective correction: set
+    ///   `useIntegralRetrospectiveCorrection` to false. The two IRC options
+    ///   above then have no effect; they matter only for emulating DIY Loop's
+    ///   integral RC.
+    /// - It applied each dose's insulin effect with the ISF in effect at the
+    ///   dose's start time: set `useMidAbsorptionISF` to false.
+    /// - Users chose between the rapid-acting adult and rapid-acting child
+    ///   models: set `recommendationInsulinType` (and dose insulin types) to
     ///   `.rapidActingAdult` or `.rapidActingChild`.
+    ///
+    /// Callers must also reproduce these parts of Tidepool Loop 1.0's dosing
+    /// themselves, since they sit outside this package:
+    /// - Overrides were applied to the basal, ISF and correction range
+    ///   schedules before dosing. 1.0 checked override expiry against the
+    ///   current time, so an override active at decision time covered every
+    ///   forecast point, even past its end: extend it to the end of the
+    ///   `target` timeline.
+    /// - The correction was computed at the latest CGM timestamp, including
+    ///   the current glucose in the suspend and minimum-glucose checks: set
+    ///   `predictionStart` to that timestamp.
+    /// - The recommended rate was rounded to a rate the pump supports, and a
+    ///   running temp basal at the same rate with more than 11 minutes left
+    ///   was continued rather than reissued.
+    /// - No recommendation was made while a bolus was in progress.
     public static let loop1 = AlgorithmEmulationOptions(
         legacyBasalIOB: true,
         legacyRCDecay: true,
         integralRCClamp: true,
         disableIRCVelocityCeiling: true,
-        noGradualTransitionsGate: true
+        noGradualTransitionsGate: true,
+        disableMaxActiveInsulinLimit: true
     )
 }
 
@@ -96,6 +128,7 @@ extension AlgorithmEmulationOptions: Codable {
         case integralRCClamp
         case disableIRCVelocityCeiling
         case noGradualTransitionsGate
+        case disableMaxActiveInsulinLimit
     }
 
     public init(from decoder: Decoder) throws {
@@ -116,6 +149,7 @@ extension AlgorithmEmulationOptions: Codable {
         self.integralRCClamp = try container.decodeIfPresent(Bool.self, forKey: .integralRCClamp) ?? false
         self.disableIRCVelocityCeiling = try container.decodeIfPresent(Bool.self, forKey: .disableIRCVelocityCeiling) ?? false
         self.noGradualTransitionsGate = try container.decodeIfPresent(Bool.self, forKey: .noGradualTransitionsGate) ?? false
+        self.disableMaxActiveInsulinLimit = try container.decodeIfPresent(Bool.self, forKey: .disableMaxActiveInsulinLimit) ?? false
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -130,5 +164,6 @@ extension AlgorithmEmulationOptions: Codable {
         try container.encode(integralRCClamp, forKey: .integralRCClamp)
         try container.encode(disableIRCVelocityCeiling, forKey: .disableIRCVelocityCeiling)
         try container.encode(noGradualTransitionsGate, forKey: .noGradualTransitionsGate)
+        try container.encode(disableMaxActiveInsulinLimit, forKey: .disableMaxActiveInsulinLimit)
     }
 }

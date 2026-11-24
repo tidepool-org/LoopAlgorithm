@@ -745,23 +745,7 @@ public struct LoopAlgorithm {
 
             let forecastEnd = input.predictionStart.addingTimeInterval(input.recommendationInsulinModel.effectDuration).dateCeiledToTimeInterval(GlucoseMath.defaultDelta)
 
-            let glucoseStart = input.glucoseHistory.first?.startDate ?? input.predictionStart
-
-            // Make sure ISF covers needed timeline
-            let recommendationEffectInterval = DateInterval(
-                start: input.predictionStart,
-                duration: input.recommendationInsulinModel.effectDuration)
-            let neededISFInterval = timelineIntervalForSensitivity(
-                doses: input.doses,
-                glucoseHistoryStart: glucoseStart,
-                recommendationEffectInterval: recommendationEffectInterval
-            )
-            guard let sensitivityStartDate = input.sensitivity.first?.startDate, sensitivityStartDate <= neededISFInterval.start else {
-                throw AlgorithmError.sensitivityTimelineStartsTooLate
-            }
-            guard let sensitivityEndDate = input.sensitivity.last?.endDate, sensitivityEndDate >= neededISFInterval.end else {
-                throw AlgorithmError.sensitivityTimelineEndsTooEarly
-            }
+            try validateSensitivityTimeline(for: input)
 
             // Make sure Basal covers needed timeline
             guard let scheduledBasalRate = input.basal.closestPrior(to: input.predictionStart)?.value else {
@@ -772,23 +756,7 @@ public struct LoopAlgorithm {
                 throw AlgorithmError.missingSuspendThreshold
             }
 
-            prediction = generatePrediction(
-                start: input.predictionStart,
-                glucoseHistory: input.glucoseHistory,
-                doses: input.doses,
-                carbEntries: input.carbEntries,
-                basal: input.basal,
-                sensitivity: input.sensitivity,
-                carbRatio: input.carbRatio,
-                target: input.target,
-                algorithmEffectsOptions: .all,
-                useIntegralRetrospectiveCorrection: input.useIntegralRetrospectiveCorrection,
-                includingPositiveVelocityAndRC: input.includePositiveVelocityAndRC,
-                useMidAbsorptionISF: input.useMidAbsorptionISF,
-                carbAbsorptionModel: input.carbAbsorptionModel.model,
-                gradualTransitionsThreshold: input.gradualTransitionsThreshold,
-                emulation: input.emulation ?? AlgorithmEmulationOptions()
-            )
+            prediction = generatePrediction(for: input)
 
             let sensitivityForDosing: [AbsoluteScheduleValue<LoopQuantity>]
             if input.useMidAbsorptionISF {
@@ -843,6 +811,9 @@ public struct LoopAlgorithm {
                     maxActiveInsulin: maxActiveInsulin)
                 result = .success(.init(automatic: AutomaticDoseRecommendation(basalAdjustment: recommendation, direction: .from(correction: correction))))
             }
+        } catch let error as AlgorithmError where error == .missingGlucose || error == .glucoseTooOld {
+            result = .failure(error)
+            prediction = predictionWithoutGlucoseForecast(for: input) ?? prediction
         } catch {
             result = .failure(error)
         }
@@ -851,6 +822,78 @@ public struct LoopAlgorithm {
             recommendationResult: result,
             predictedGlucose: prediction.glucose,
             effects: prediction.effects,
+            dosesRelativeToBasal: prediction.dosesRelativeToBasal,
+            activeInsulin: prediction.activeInsulin,
+            activeCarbs: prediction.activeCarbs
+        )
+    }
+
+    /// Throws if the sensitivity timeline doesn't cover the doses, the glucose history, and the effect
+    /// of a recommended dose.
+    private static func validateSensitivityTimeline<Input: AlgorithmInput>(for input: Input) throws {
+        let glucoseStart = input.glucoseHistory.first?.startDate ?? input.predictionStart
+
+        let recommendationEffectInterval = DateInterval(
+            start: input.predictionStart,
+            duration: input.recommendationInsulinModel.effectDuration)
+        let neededISFInterval = timelineIntervalForSensitivity(
+            doses: input.doses,
+            glucoseHistoryStart: glucoseStart,
+            recommendationEffectInterval: recommendationEffectInterval
+        )
+        guard let sensitivityStartDate = input.sensitivity.first?.startDate, sensitivityStartDate <= neededISFInterval.start else {
+            throw AlgorithmError.sensitivityTimelineStartsTooLate
+        }
+        guard let sensitivityEndDate = input.sensitivity.last?.endDate, sensitivityEndDate >= neededISFInterval.end else {
+            throw AlgorithmError.sensitivityTimelineEndsTooEarly
+        }
+    }
+
+    private static func generatePrediction<Input: AlgorithmInput>(for input: Input) -> LoopPrediction<Input.CarbType> {
+        generatePrediction(
+            start: input.predictionStart,
+            glucoseHistory: input.glucoseHistory,
+            doses: input.doses,
+            carbEntries: input.carbEntries,
+            basal: input.basal,
+            sensitivity: input.sensitivity,
+            carbRatio: input.carbRatio,
+            target: input.target,
+            algorithmEffectsOptions: .all,
+            useIntegralRetrospectiveCorrection: input.useIntegralRetrospectiveCorrection,
+            includingPositiveVelocityAndRC: input.includePositiveVelocityAndRC,
+            useMidAbsorptionISF: input.useMidAbsorptionISF,
+            carbAbsorptionModel: input.carbAbsorptionModel.model,
+            gradualTransitionsThreshold: input.gradualTransitionsThreshold,
+            emulation: input.emulation ?? AlgorithmEmulationOptions()
+        )
+    }
+
+    /// When glucose is missing or too old to forecast from (e.g. during CGM signal loss), `run` can't
+    /// make a recommendation, but active insulin, active carbs, carb status, and doses relative to basal
+    /// don't depend on a current glucose reading. This computes those so apps can keep showing
+    /// insulin and carbs on board. The glucose forecast and glucose effects stay empty, since they'd be
+    /// based on stale glucose.
+    ///
+    /// Returns nil if the sensitivity timeline doesn't cover the input.
+    private static func predictionWithoutGlucoseForecast<Input: AlgorithmInput>(for input: Input) -> LoopPrediction<Input.CarbType>? {
+        guard (try? validateSensitivityTimeline(for: input)) != nil else {
+            return nil
+        }
+
+        let prediction = generatePrediction(for: input)
+
+        return LoopPrediction(
+            glucose: [],
+            effects: LoopAlgorithmEffects(
+                insulin: [],
+                carbs: [],
+                carbStatus: prediction.effects.carbStatus,
+                retrospectiveCorrection: [],
+                momentum: [],
+                insulinCounteraction: [],
+                retrospectiveGlucoseDiscrepancies: []
+            ),
             dosesRelativeToBasal: prediction.dosesRelativeToBasal,
             activeInsulin: prediction.activeInsulin,
             activeCarbs: prediction.activeCarbs

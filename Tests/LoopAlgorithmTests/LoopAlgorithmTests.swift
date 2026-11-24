@@ -79,6 +79,117 @@ final class LoopAlgorithmTests: XCTestCase {
         XCTAssertEqual(output.recommendation!.manual!.amount, 5.86, accuracy: 0.01)
     }
 
+    private func mealBolusInput(at now: Date) -> AlgorithmInputFixture {
+        var input = AlgorithmInputFixture.mock(for: now)
+        input.recommendationType = .manualBolus
+        input.carbEntries = [
+            FixtureCarbEntry(startDate: now.addingTimeInterval(.minutes(-5)), quantity: .carbs(20))
+        ]
+        input.doses = [
+            FixtureInsulinDose(
+                deliveryType: .bolus,
+                startDate: now.addingTimeInterval(.minutes(-5)),
+                endDate: now.addingTimeInterval(.minutes(-4)),
+                volume: 2
+            )
+        ]
+        return input
+    }
+
+    /// Apps build their active insulin and carbs charts from these timelines, so they shouldn't be flat.
+    private func assertInsulinAndCarbTimelines(
+        _ output: LoopAlgorithmOutputFixture,
+        input: AlgorithmInputFixture,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        let iob = output.dosesRelativeToBasal.insulinOnBoardTimeline()
+        XCTAssertEqual(iob.map(\.value).max() ?? 0, 2, accuracy: 0.1, file: file, line: line)
+
+        let cob = output.effects.carbStatus.dynamicCarbsOnBoard(
+            from: input.predictionStart.addingTimeInterval(.hours(-1)),
+            absorptionModel: input.carbAbsorptionModel.model
+        )
+        XCTAssertEqual(cob.map { $0.quantity.doubleValue(for: .gram) }.max() ?? 0, 20, accuracy: 1, file: file, line: line)
+    }
+
+    func testStaleGlucoseStillComputesActiveInsulinAndCarbs() throws {
+        let now = ISO8601DateFormatter().date(from: "2024-01-03T12:00:00+0000")!
+        var input = mealBolusInput(at: now)
+
+        // Last CGM reading is older than inputDataRecencyInterval (e.g. signal loss)
+        input.glucoseHistory = [
+            sample(at: now.addingTimeInterval(.minutes(-35)), glucose: 110),
+            sample(at: now.addingTimeInterval(.minutes(-30)), glucose: 112),
+        ]
+
+        let output = LoopAlgorithm.run(input: input)
+
+        guard case .failure(let error) = output.recommendationResult else {
+            return XCTFail("Expected a failure, got \(output.recommendationResult)")
+        }
+        XCTAssertEqual(error as? AlgorithmError, .glucoseTooOld)
+
+        // No forecast from stale glucose
+        XCTAssert(output.predictedGlucose.isEmpty)
+        XCTAssert(output.effects.insulin.isEmpty)
+        XCTAssert(output.effects.carbs.isEmpty)
+        XCTAssert(output.effects.momentum.isEmpty)
+        XCTAssert(output.effects.retrospectiveCorrection.isEmpty)
+
+        // Insulin and carbs on board are still available
+        XCTAssertEqual(try XCTUnwrap(output.activeInsulin), 2, accuracy: 0.1)
+        XCTAssertEqual(try XCTUnwrap(output.activeCarbs), 20, accuracy: 1)
+        XCTAssertEqual(output.effects.carbStatus.count, 1)
+        XCTAssertFalse(output.dosesRelativeToBasal.isEmpty)
+        assertInsulinAndCarbTimelines(output, input: input)
+    }
+
+    func testMissingGlucoseStillComputesActiveInsulinAndCarbs() throws {
+        let now = ISO8601DateFormatter().date(from: "2024-01-03T12:00:00+0000")!
+        var input = mealBolusInput(at: now)
+        input.glucoseHistory = []
+
+        let output = LoopAlgorithm.run(input: input)
+
+        guard case .failure(let error) = output.recommendationResult else {
+            return XCTFail("Expected a failure, got \(output.recommendationResult)")
+        }
+        XCTAssertEqual(error as? AlgorithmError, .missingGlucose)
+
+        XCTAssert(output.predictedGlucose.isEmpty)
+        XCTAssertEqual(try XCTUnwrap(output.activeInsulin), 2, accuracy: 0.1)
+        XCTAssertEqual(try XCTUnwrap(output.activeCarbs), 20, accuracy: 1)
+        XCTAssertEqual(output.effects.carbStatus.count, 1)
+        XCTAssertFalse(output.dosesRelativeToBasal.isEmpty)
+        assertInsulinAndCarbTimelines(output, input: input)
+    }
+
+    func testStaleGlucoseWithIncompleteSensitivityTimelineComputesNothing() throws {
+        let now = ISO8601DateFormatter().date(from: "2024-01-03T12:00:00+0000")!
+        var input = mealBolusInput(at: now)
+        input.glucoseHistory = [
+            sample(at: now.addingTimeInterval(.minutes(-35)), glucose: 110),
+        ]
+
+        // Sensitivity starts after the glucose history and doses it needs to cover
+        let sensitivityEnd = input.sensitivity.last!.endDate
+        input.sensitivity = [AbsoluteScheduleValue(startDate: now, endDate: sensitivityEnd, value: .glucose(55))]
+
+        let output = LoopAlgorithm.run(input: input)
+
+        // The glucose error is still the one reported
+        guard case .failure(let error) = output.recommendationResult else {
+            return XCTFail("Expected a failure, got \(output.recommendationResult)")
+        }
+        XCTAssertEqual(error as? AlgorithmError, .glucoseTooOld)
+
+        XCTAssertNil(output.activeInsulin)
+        XCTAssertNil(output.activeCarbs)
+        XCTAssert(output.effects.carbStatus.isEmpty)
+        XCTAssert(output.dosesRelativeToBasal.isEmpty)
+    }
+
 
     func testAlgorithmShouldBeDateIndependent() throws {
         let now = Date()

@@ -7,7 +7,7 @@ version: 2.1
 jobs:
   test:
     macos:
-      xcode: 26.1.0
+      xcode: "27.2.0"
     resource_class: m4pro.medium
     steps:
       - checkout
@@ -19,7 +19,7 @@ jobs:
           path: test_output
   package:
     macos:
-      xcode: 26.1.0
+      xcode: "27.2.0"
     resource_class: m4pro.medium
     steps:
       - checkout
